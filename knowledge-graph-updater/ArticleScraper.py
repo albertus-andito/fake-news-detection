@@ -1,14 +1,18 @@
+import os
 import requests
 from abc import ABC, abstractmethod
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+from pathlib import Path
 from pymongo import MongoClient
 from requests_html import HTMLSession
 
 
 class ArticleScraper(ABC):
 
-    def __init__(self, db_connection):
-        self.db_client = MongoClient(db_connection)
+    def __init__(self):
+        load_dotenv(dotenv_path=Path('../.env'))
+        self.db_client = MongoClient(os.getenv("MONGODB_ADDRESS"))
         self.db = self.db_client["fnd"]
         self.db_collection = self.db["articles"]
         self.db_collection.create_index("source", unique=True)
@@ -58,8 +62,15 @@ class IndependentScraper(ArticleScraper):
 
 
 class GuardianScraper(ArticleScraper):
+
+    def __init__(self):
+        super()
+        load_dotenv(dotenv_path=Path('../.env'))
+        self.api_key = os.getenv("GUARDIAN_API_KEY")
+
     def scrape(self, url):
-        payload = {'api-key': '147a81bd-3ca0-4163-954f-a5982a016227', 'show-fields': 'headline,body,trailText'}
+        print(self.api_key)
+        payload = {'api-key': self.api_key, 'show-fields': 'headline,body,trailText'}
         response = requests.get(url, params=payload).json()['response']['content']
 
         soup = BeautifulSoup(response['fields']['body'], 'html.parser')

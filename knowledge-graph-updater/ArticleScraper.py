@@ -2,6 +2,7 @@ import os
 import requests
 from abc import ABC, abstractmethod
 from bs4 import BeautifulSoup
+from datetime import datetime
 from dotenv import load_dotenv
 from pathlib import Path
 from pymongo import MongoClient
@@ -37,7 +38,7 @@ class BbcScraper(ArticleScraper):
         texts = [elem.text for elem in text_elements]
         return {
             "headlines": [soup.find(id='main-heading').text],
-            "date": soup.time['datetime'],
+            "date": datetime.fromisoformat(soup.time['datetime'].replace("Z", "+00:00")),
             "texts": texts,
             "source": url
         }
@@ -55,7 +56,7 @@ class IndependentScraper(ArticleScraper):
         texts = [elem.text for elem in text_elements]
         return {
             "headlines": [header.find('h1').text, header.find('h2').text],
-            "date": header.find('amp-timeago')['datetime'],
+            "date": datetime.fromisoformat(header.find('amp-timeago')['datetime'].replace("Z", "+00:00")),
             "texts": texts,
             "source": url
         }
@@ -64,8 +65,7 @@ class IndependentScraper(ArticleScraper):
 class GuardianScraper(ArticleScraper):
 
     def __init__(self):
-        super()
-        load_dotenv(dotenv_path=Path('../.env'))
+        super().__init__()
         self.api_key = os.getenv("GUARDIAN_API_KEY")
 
     def scrape(self, url):
@@ -78,7 +78,7 @@ class GuardianScraper(ArticleScraper):
         texts = [elem.text for elem in text_elements]
         return {
             "headlines": [response['fields']['headline'], response['fields']['trailText']],
-            "date": response['webPublicationDate'],
+            "date": datetime.fromisoformat(response['webPublicationDate'].replace("Z", "+00:00")),
             "texts": texts,
             "source": response['webUrl']
         }

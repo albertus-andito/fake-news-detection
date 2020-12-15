@@ -34,11 +34,27 @@ class BbcScraper(ArticleScraper):
         page = requests.get(url)
         soup = BeautifulSoup(page.content, 'html.parser')
 
+        if soup.find(id='main-heading') is not None:
+            headlines = soup.find(id='main-heading').text
+        elif soup.find('h1', {'class': 'qa-story-headline-hidden'}) is not None:  # for sport news
+            headlines = soup.find('h1', {'class': 'qa-story-headline-hidden'}).text
+        else:
+            headlines = None
+
+        if soup.time is not None:
+            date = datetime.fromisoformat(soup.time['datetime'].replace("Z", "+00:00"))
+        else:
+            date = None
+
         text_elements = soup.find_all('div', {'data-component': 'text-block'})
+        if len(text_elements) == 0:
+            video_div = soup.find('div', {'aria-live': 'polite'})  # for video news
+            text_elements = video_div.find_all('p')
+
         texts = [elem.text for elem in text_elements]
         return {
-            "headlines": [soup.find(id='main-heading').text],
-            "date": datetime.fromisoformat(soup.time['datetime'].replace("Z", "+00:00")),
+            "headlines": [headlines],
+            "date": date,
             "texts": texts,
             "source": url
         }

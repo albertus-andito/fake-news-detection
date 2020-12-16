@@ -19,7 +19,9 @@ class ArticleScraper(ABC):
         self.db_collection.create_index("source", unique=True)
 
     def execute(self, url):
-        self.save_to_db(self.scrape(url))
+        article = self.scrape(url)
+        if article is not None:
+            self.save_to_db(article)
 
     @abstractmethod
     def scrape(self, url):
@@ -42,14 +44,20 @@ class BbcScraper(ArticleScraper):
             headlines = None
 
         if soup.time is not None:
-            date = datetime.fromisoformat(soup.time['datetime'].replace("Z", "+00:00"))
+            try:
+                date = datetime.fromisoformat(soup.time['datetime'].replace("Z", "+00:00"))
+            except ValueError:
+                date = None
         else:
             date = None
 
         text_elements = soup.find_all('div', {'data-component': 'text-block'})
-        if len(text_elements) == 0:
+        if len(text_elements) == 0 and soup.find('div', {'aria-live': 'polite'}) is not None:
             video_div = soup.find('div', {'aria-live': 'polite'})  # for video news
             text_elements = video_div.find_all('p')
+        elif len(text_elements) == 0 and soup.find('div', {'class': 'qa-story-body'}) is not None:
+            div = soup.find('div', {'class': 'qa-story-body'})  # for sport news
+            text_elements = div.find_all('p')
 
         texts = [elem.text for elem in text_elements]
         return {
@@ -67,6 +75,8 @@ class IndependentScraper(ArticleScraper):
         soup = BeautifulSoup(page.content, 'html.parser')
 
         header = soup.find(id='articleHeader')
+        if header is None:
+            header = soup  # for IndyLife or Travel
         content = soup.find(id='main')
         text_elements = content.find_all('p')
         texts = [elem.text for elem in text_elements]
@@ -85,16 +95,21 @@ class GuardianScraper(ArticleScraper):
         self.api_key = os.getenv("GUARDIAN_API_KEY")
 
     def scrape(self, url):
-        print(self.api_key)
+        if url.startswith("https://www.theguardian"):
+            api_url = url.replace("https://www.theguardian", "https://content.guardianapis")
+        else:
+            api_url = url
         payload = {'api-key': self.api_key, 'show-fields': 'headline,body,trailText'}
-        response = requests.get(url, params=payload).json()['response']['content']
-
-        soup = BeautifulSoup(response['fields']['body'], 'html.parser')
-        text_elements = soup.find_all('p')
-        texts = [elem.text for elem in text_elements]
-        return {
-            "headlines": [response['fields']['headline'], response['fields']['trailText']],
-            "date": datetime.fromisoformat(response['webPublicationDate'].replace("Z", "+00:00")),
-            "texts": texts,
-            "source": response['webUrl']
-        }
+        response = requests.get(api_url, params=payload).json()['response']
+        if response['status'] == 'ok':
+            content = response['content']
+            soup = BeautifulSoup(content['fields']['body'], 'html.parser')
+            text_elements = soup.find_all('p')
+            texts = [elem.text for elem in text_elements]
+            return {
+                "headlines": [content['fields']['headline'], content['fields']['trailText']],
+                "date": datetime.fromisoformat(content['webPublicationDate'].replace("Z", "+00:00")),
+                "texts": texts,
+                "source": content['webUrl']
+            }
+        return {"source": url}

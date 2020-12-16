@@ -1,6 +1,5 @@
-from pollers import BbcPoller
-from scrapers import BbcScraper
+from poller import NewsPoller
 
 if __name__ == '__main__':
-    x = BbcPoller(BbcScraper())
-    x.start()
+    poller = NewsPoller()
+    poller.start()

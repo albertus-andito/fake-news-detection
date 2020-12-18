@@ -250,3 +250,16 @@ zict==2.0.0
 zipp @ file:///tmp/build/80754af9/zipp_1604001098328/work
 zope.event==4.5.0
 zope.interface @ file:///C:/ci/zope.interface_1602002494740/work
+
+pandas~=1.1.3
+pyopenie~=0.2.0
+stanfordcorenlp~=3.9.1.1
+neuralcoref~=4.0
+setuptools~=50.3.1
+numpy~=1.19.2
+tqdm~=4.51.0
+six~=1.15.0
+boto3~=1.16.25
+requests~=2.24.0
+botocore~=1.19.25
+nltk~=3.5

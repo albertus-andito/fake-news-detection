@@ -1,6 +1,6 @@
 # Script to get SPO triples from first dataset (from https://zenodo.org/record/4282522)
 
-from TripleExtractor import TripleExtractor
+from TripleProducer import TripleProducer
 import pprint
 import pandas as pd
 
@@ -13,7 +13,7 @@ def get_relations(triples):
             relation.append(triple['relation'])
     return relation
 
-extractor = TripleExtractor(r'C:\Users\aandi\Documents\Uni\Final Year\FYP Code\stanford-corenlp-4.2.0')
+extractor = TripleProducer(r'C:\Users\aandi\Documents\Uni\Final Year\FYP Code\stanford-corenlp-4.2.0')
 df['triples'] = [extractor.produce_triples(doc) for doc in df['headlines']]
 pprint.pprint(df['triples'])
 print(df['triples'].loc[1][0])

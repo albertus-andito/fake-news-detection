@@ -8,13 +8,25 @@ from stanfordcorenlp import StanfordCoreNLP
 
 
 class TripleExtractor(ABC):
-
+    """
+    Abstract class of Triple Extractor
+    """
     @abstractmethod
     def extract(self, document):
+        """
+        Extract SPO triples from document
+        :param document: document
+        :type document: str
+        :return: list of triples
+        :rtype: list
+        """
         pass
 
 
 class StanfordExtractor(TripleExtractor):
+    """
+    Triple extraction using Stanford OpenIE (https://github.com/Lynten/stanford-corenlp)
+    """
     props = {'annotators': 'openie', 'pipelineLanguage': 'en', 'outputFormat': 'json'}
 
     def __init__(self):
@@ -25,6 +37,13 @@ class StanfordExtractor(TripleExtractor):
         self.coreNLP.close()
 
     def extract(self, document):
+        """
+        Extract SPO triples from document
+        :param document: document
+        :type document: str
+        :return: list of triples
+        :rtype: list
+        """
         output_sentences = json.loads(self.coreNLP.annotate(document, self.props), encoding='utf-8')['sentences']
         all_triples = []
         for sentence in output_sentences:
@@ -40,12 +59,21 @@ class StanfordExtractor(TripleExtractor):
 
 
 class IITExtractor(TripleExtractor):
-
+    """
+    Triple extraction using IIT OpenIE (https://github.com/vaibhavad/python-wrapper-OpenIE5)
+    """
     def __init__(self):
         load_dotenv(dotenv_path=Path('./.env'))
         self.openie = OpenIE5(os.getenv("IIT_OPENIE_URL"))
 
     def extract(self, document):
+        """
+        Extract SPO triples from document
+        :param document: document
+        :type document: str
+        :return: list of triples
+        :rtype: list
+        """
         all_triples = []
         extractions = self.openie.extract(document)
         for extraction in extractions:
@@ -57,6 +85,7 @@ class IITExtractor(TripleExtractor):
             all_triples.append(spo)
         return all_triples
 
+# Testing
 import pprint
 if __name__ == '__main__':
     stanford = StanfordExtractor()

@@ -22,6 +22,7 @@ class TripleProducer:
 
     """
     SPOTLIGHT_URL = 'https://api.dbpedia-spotlight.org/en/annotate?'
+    FALCON_URL = 'https://labs.tib.eu/falcon/api?mode=long'
 
     def __init__(self, extractor_type=None, extraction_scope=None):
         """
@@ -79,8 +80,15 @@ class TripleProducer:
         # map to dbpedia resource (dbpedia spotlight) for Named Entities
         all_triples = self.spot_entities_with_context(document, all_triples)
 
+        # link relations using Falcon
+        triples_with_linked_relations = self.link_relations(document, all_triples)
+
         # lemmatise relations
-        all_triples = self.lemmatise_relation(spacy_doc, all_triples)
+        all_triples = self.lemmatise_relations(spacy_doc, all_triples)
+
+        # convert relations to dbpedia format
+        all_triples = self.convert_relations(all_triples)
+        all_triples = all_triples + triples_with_linked_relations
 
         # TODO: might still want to match subject/object to DBpedia, even if they're not really named entities?
         # TODO: extract relation???
@@ -126,7 +134,8 @@ class TripleProducer:
         for triple in all_triples:
             triple['subject'] = ' '.join([word for word in word_tokenize(triple['subject']) if word not in all_stopwords])
             # triple['relation'] = ' '.join([word for word in word_tokenize(triple['relation']) if word not in all_stopwords])
-            triple['object'] = [' '.join([word for word in word_tokenize(o) if word not in all_stopwords]) for o in triple['object']]
+            triple['object'] = [' '.join([word for word in word_tokenize(o) if word not in all_stopwords]) for o in
+                                triple['object']]
         return all_triples
 
     def filter_in_named_entities(self, spacy_doc, all_triples):
@@ -233,20 +242,97 @@ class TripleProducer:
 
         return all_triples
 
-    def lemmatise_relation(self, spacy_doc, all_triples):
+    def link_relations(self, document, all_triples):
+        """
+        Link relations to DBpedia Ontology using Falcon, if available.
+        :param document: document
+        :type document: str
+        :param all_triples: list of triples
+        :type all_triples: list
+        :return: new list of triples with dbpedia relations
+        :rtype list
+        """
+        response = requests.post(self.FALCON_URL,
+                                 data='{"text": "%s"}' % document,
+                                 # data={"text":document},
+                                 headers={"Content-Type": "application/json"})
+        if response.status_code != 200:
+            print(response.text)
+        else:
+            try:
+                relations = response.json()["relations"]
+            except json.decoder.JSONDecodeError as e:
+                print(e.msg)
+                return None
+
+        if relations is not None:
+            relations_in_triples = [triple['relation'] for triple in all_triples]
+            dbpedia_relations = [rel[0] for rel in relations]
+            raw_relations = [rel[1] for rel in relations]
+            # TODO: Change list to set
+            new_triples = []
+            for triple in all_triples:
+                if triple['relation'] in raw_relations:
+                    new_triple = {'subject': triple['subject'], 'object': triple['object'],
+                                  'relation': dbpedia_relations[raw_relations.index(triple['relation'])]}
+                    new_triples.append(new_triple)
+            for i, rel in enumerate(raw_relations):
+                index = [idx for idx, s in enumerate(relations_in_triples) if rel in s]
+                if len(index) > 0:
+                    new_triple = {'subject': all_triples[index[0]]['subject'],
+                                  'object': all_triples[index[0]]['object'],
+                                  'relation': dbpedia_relations[i]}
+                    new_triples.append(new_triple)
+            return new_triples
+        else:
+            return None
+
+    def lemmatise_relations(self, spacy_doc, all_triples):
         """
         Lemmatise relations to their based forms.
         :param spacy_doc: spacy document
-
-        :param all_triples:
-        :return:
+        :type spacy_doc: spacy.tokens.Doc
+        :param all_triples: list of triples
+        :type all_triples: list
+        :return: list of triples where relations have been lemmatised
+        :rtype: list
         """
         all_stopwords = self.nlp.Defaults.stop_words
         for triple in all_triples:
             relation = [word for word in word_tokenize(triple['relation']) if word not in all_stopwords]
             triple['relation'] = ' '.join([spacy_tok.lemma_ for token in relation for spacy_tok in spacy_doc
                                            if token == spacy_tok.text])
+            if not triple['relation']:
+                triple['relation'] = "is"
+
         return all_triples
+
+    def convert_relations(self, all_triples):
+        """
+        Prepend all relations with "http://dbpedia.org/ontology/", even if the relation doesn't exist in DBpedia.
+        :param all_triples: list of triples
+        :type all_triples: list
+        :return: list of triples, where relations have been converted
+        :rtype: list
+        """
+        for triple in all_triples:
+            triple['relation'] = "http://dbpedia.org/ontology/" + self.__camelise(triple['relation'])
+        return all_triples
+
+    def __camelise(self, sentence):
+        """
+        Util function to convert words into camelCase
+        :param sentence: sentence
+        :type sentence: str
+        :return: camelCase words
+        :rtype: str
+        """
+        words = word_tokenize(sentence)
+        if len(words) == 1:
+            return sentence.lower()
+        else:
+            s = "".join(word[0].upper() + word[1:].lower() for word in words)
+            return s[0].lower() + s[1:]
 
 
 # Testing
@@ -256,6 +342,7 @@ if __name__ == "__main__":
     iit_producer = TripleProducer(extraction_scope='all')
     stanford_producer = TripleProducer(extractor_type='stanford_openie', extraction_scope='all')
     doc_1 = "Barrack Obama was born in Hawaii. He attended school in Jakarta."
+    # doc_1 = "Barrack Obama was born in Hawaii."
     print(doc_1)
     print("IIT:")
     pprint.pprint(iit_producer.produce_triples(doc_1))

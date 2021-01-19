@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 from pyopenie import OpenIE5
 from stanfordcorenlp import StanfordCoreNLP
+from Triple import Triple
 
 
 class TripleExtractor(ABC):
@@ -49,11 +50,7 @@ class StanfordExtractor(TripleExtractor):
         for sentence in output_sentences:
             openie = sentence['openie']
             for openie_triple in openie:
-                triple = {
-                    "subject": openie_triple['subject'],
-                    "relation": openie_triple['relation'],
-                    "object": [openie_triple['object']]
-                }
+                triple = Triple(openie_triple['subject'], openie_triple['relation'], [openie_triple['object']])
                 all_triples.append(triple)
         return all_triples
 
@@ -77,12 +74,9 @@ class IITExtractor(TripleExtractor):
         all_triples = []
         extractions = self.openie.extract(document)
         for extraction in extractions:
-            spo = {
-                "subject": extraction['extraction']['arg1']['text'],
-                "relation": extraction['extraction']['rel']['text'],
-                "object": [obj['text'] for obj in extraction['extraction']['arg2s']]
-            }
-            all_triples.append(spo)
+            triple = Triple(extraction['extraction']['arg1']['text'], extraction['extraction']['rel']['text'],
+                            [obj['text'] for obj in extraction['extraction']['arg2s']])
+            all_triples.append(triple)
         return all_triples
 
 # Testing

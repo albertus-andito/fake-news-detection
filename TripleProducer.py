@@ -1,5 +1,6 @@
 from json import JSONDecodeError
 from nltk.tokenize import sent_tokenize, word_tokenize
+from Triple import Triple
 from TripleExtractors import StanfordExtractor, IITExtractor
 import json
 import neuralcoref
@@ -63,6 +64,7 @@ class TripleProducer:
         # coreference resolution
         document = self.coref_resolution(spacy_doc)
 
+        # TODO: convert all_triples list to set
         # extract spo triples from sentences
         all_triples = self.extract_triples(document)
 
@@ -88,7 +90,7 @@ class TripleProducer:
 
         # convert relations to dbpedia format
         all_triples = self.convert_relations(all_triples)
-        all_triples = all_triples + triples_with_linked_relations
+        all_triples = set(all_triples).union(triples_with_linked_relations)
 
         # TODO: might still want to match subject/object to DBpedia, even if they're not really named entities?
         # TODO: extract relation???
@@ -119,6 +121,7 @@ class TripleProducer:
                 triples.append(self.extractor.extract(sentence))
             except JSONDecodeError as e:
                 print(e.msg)
+        # TODO: The triples are currently stored in a flat list. Should we change it to list of lists (separated by sentences)?
         return [triple for sentence in triples for triple in sentence]
 
     def remove_stopwords(self, all_triples):
@@ -132,10 +135,10 @@ class TripleProducer:
         """
         all_stopwords = self.nlp.Defaults.stop_words
         for triple in all_triples:
-            triple['subject'] = ' '.join([word for word in word_tokenize(triple['subject']) if word not in all_stopwords])
-            # triple['relation'] = ' '.join([word for word in word_tokenize(triple['relation']) if word not in all_stopwords])
-            triple['object'] = [' '.join([word for word in word_tokenize(o) if word not in all_stopwords]) for o in
-                                triple['object']]
+            triple.subject = ' '.join([word for word in word_tokenize(triple.subject) if word not in all_stopwords])
+            # triple.relation = ' '.join([word for word in word_tokenize(triple['relation']) if word not in all_stopwords])
+            triple.objects = [' '.join([word for word in word_tokenize(o) if word not in all_stopwords]) for o in
+                              triple.objects]
         return all_triples
 
     def filter_in_named_entities(self, spacy_doc, all_triples):
@@ -177,8 +180,8 @@ class TripleProducer:
         """
         filtered_triples = []
         for triple in all_triples:
-            if triple['subject'] in in_list:
-                for obj in triple['object']:
+            if triple.subject in in_list:
+                for obj in triple.objects:
                     if obj in in_list:
                         filtered_triples.append(triple)
                         break
@@ -230,15 +233,15 @@ class TripleProducer:
         if resources is not None:
             for triple in all_triples:
                 for resource in resources:
-                    if triple['subject'] in resource['@surfaceForm']:
-                        triple['subject'] = resource['@URI']
+                    if triple.subject in resource['@surfaceForm']:
+                        triple.subject = resource['@URI']
                     objs = []
-                    for obj in triple['object']:
+                    for obj in triple.objects:
                         if obj in resource['@surfaceForm']:
                             objs.append(resource['@URI'])
                         else:
                             objs.append(obj)
-                    triple['object'] = objs
+                    triple.objects = objs
 
         return all_triples
 
@@ -254,7 +257,6 @@ class TripleProducer:
         """
         response = requests.post(self.FALCON_URL,
                                  data='{"text": "%s"}' % document,
-                                 # data={"text":document},
                                  headers={"Content-Type": "application/json"})
         if response.status_code != 200:
             print(response.text)
@@ -266,23 +268,21 @@ class TripleProducer:
                 return None
 
         if relations is not None:
-            relations_in_triples = [triple['relation'] for triple in all_triples]
+            relations_in_triples = [triple.relation for triple in all_triples]
             dbpedia_relations = [rel[0] for rel in relations]
             raw_relations = [rel[1] for rel in relations]
             # TODO: Change list to set
-            new_triples = []
+            new_triples = set()
             for triple in all_triples:
-                if triple['relation'] in raw_relations:
-                    new_triple = {'subject': triple['subject'], 'object': triple['object'],
-                                  'relation': dbpedia_relations[raw_relations.index(triple['relation'])]}
-                    new_triples.append(new_triple)
+                if triple.relation in raw_relations:
+                    new_triple = Triple(triple.subject, dbpedia_relations[raw_relations.index(triple.relation)],
+                                        triple.objects)
+                    new_triples.add(new_triple)
             for i, rel in enumerate(raw_relations):
                 index = [idx for idx, s in enumerate(relations_in_triples) if rel in s]
                 if len(index) > 0:
-                    new_triple = {'subject': all_triples[index[0]]['subject'],
-                                  'object': all_triples[index[0]]['object'],
-                                  'relation': dbpedia_relations[i]}
-                    new_triples.append(new_triple)
+                    new_triple = Triple(all_triples[index[0]].subject, dbpedia_relations[i], all_triples[index[0]].objects)
+                    new_triples.add(new_triple)
             return new_triples
         else:
             return None
@@ -299,11 +299,11 @@ class TripleProducer:
         """
         all_stopwords = self.nlp.Defaults.stop_words
         for triple in all_triples:
-            relation = [word for word in word_tokenize(triple['relation']) if word not in all_stopwords]
-            triple['relation'] = ' '.join([spacy_tok.lemma_ for token in relation for spacy_tok in spacy_doc
-                                           if token == spacy_tok.text])
-            if not triple['relation']:
-                triple['relation'] = "is"
+            relation = [word for word in word_tokenize(triple.relation) if word not in all_stopwords]
+            triple.relation = ' '.join([spacy_tok.lemma_ for token in relation for spacy_tok in spacy_doc
+                                        if token == spacy_tok.text])
+            if not triple.relation:
+                triple.relation = "is"
 
         return all_triples
 
@@ -316,7 +316,7 @@ class TripleProducer:
         :rtype: list
         """
         for triple in all_triples:
-            triple['relation'] = "http://dbpedia.org/ontology/" + self.__camelise(triple['relation'])
+            triple.relation = "http://dbpedia.org/ontology/" + self.__camelise(triple.relation)
         return all_triples
 
     def __camelise(self, sentence):

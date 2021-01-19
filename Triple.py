@@ -13,6 +13,7 @@ class Triple:
         if isinstance(other, Triple):
             return self.subject == other.subject and self.relation == other.relation \
                    and sorted(self.objects) == sorted(other.objects)
+        return False
 
     def __str__(self):
         return self.to_json()
@@ -28,7 +29,7 @@ class Triple:
 
 
 if __name__ == '__main__':
-    triple = Triple('UV rays', 'cure', ['abc', 'COVID 19', 'def'])
+    triple = Triple('UV rays', 'cure', ['abc', 'COVID 19'])
     triple2 = Triple('UV rays', 'cure', ['COVID 19', 'abc'])
     triple3 = Triple()
     pprint.pprint(triple.to_json())

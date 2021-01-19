@@ -1,26 +1,41 @@
 import feedparser
+import logging
 import os
 import schedule
 import time
+from article_scraper.scrapers import IndependentScraper, BbcScraper, GuardianScraper
 from dotenv import load_dotenv
 from pathlib import Path
 from pymongo import MongoClient
-from scrapers import IndependentScraper, BbcScraper, GuardianScraper
 
 
 class NewsPoller:
+    """
+    NewsPoller polls the RSS endpoints periodically (currently every minute) and uses scrapers to scrape articles.
+    """
     BBC_RSS_URL = "http://feeds.bbci.co.uk/news/rss.xml"
     INDEPENDENT_RSS_URL = "https://www.independent.co.uk/news/rss"
     GUARDIAN_RSS_URL = "https://www.theguardian.com/uk/rss"
+    logger = logging.getLogger()
 
     def __init__(self):
-        load_dotenv(dotenv_path=Path('../.env'))
+        """
+        Constructor method
+        """
+        load_dotenv(dotenv_path=Path('../../.env'))
         self.db_client = MongoClient(os.getenv("MONGODB_ADDRESS"))
-        self.db = self.db_client["fnd"]
-        self.db_collection = self.db["articles"]
+        self.db = self.db_client["fnd"] # TODO: parameterised
+        self.db_collection = self.db["articles"] # TODO: parameterised
         self.db_collection.create_index("source", unique=True)
+        NewsPoller.logger.info('NewsPoller initialised.')
 
     def start(self):
+        """
+        Starts the periodical polling process. Currently set to every minute.
+        :return:
+        """
+        NewsPoller.logger.info('NewsPoller started.')
+
         bbc = BbcScraper()
         self.poll_news_feed(NewsPoller.BBC_RSS_URL, bbc)
         schedule.every().minute.do(self.poll_news_feed, NewsPoller.BBC_RSS_URL, bbc)
@@ -38,10 +53,16 @@ class NewsPoller:
             time.sleep(1)
 
     def poll_news_feed(self, rss_url, scraper):
+        """
+        Polls the news feed RSS and uses the scraper to scrape articles.
+        :param rss_url: News feed RSS URL
+        :type rss_url: str
+        :param scraper: Scraper for the corresponding news website
+        :type scraper: article_scraper.ArticleScraper
+        """
+        NewsPoller.logger.info('Polling %s ...', rss_url)
         entries = feedparser.parse(rss_url)['entries']
-        print("starting...", rss_url)
         for entry in entries:
             if self.db_collection.find_one({"source": entry['link']}) is None:
-                print(entry['link'])
-                print(entry['published'])
+                NewsPoller.logger.info('Scraping %s %s...', entry['link'], entry['published'])
                 scraper.execute(entry['link'])

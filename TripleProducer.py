@@ -64,7 +64,6 @@ class TripleProducer:
         # coreference resolution
         document = self.coref_resolution(spacy_doc)
 
-        # TODO: convert all_triples list to set
         # extract spo triples from sentences
         all_triples = self.extract_triples(document)
 
@@ -90,7 +89,7 @@ class TripleProducer:
 
         # convert relations to dbpedia format
         all_triples = self.convert_relations(all_triples)
-        all_triples = set(all_triples).union(triples_with_linked_relations)
+        all_triples = list(all_triples.union(triples_with_linked_relations))
 
         # TODO: might still want to match subject/object to DBpedia, even if they're not really named entities?
         # TODO: extract relation???
@@ -111,26 +110,26 @@ class TripleProducer:
         Extract triples from document using the implementation of TripleExtractor.
         :param document: document
         :type document: str
-        :return: a list of raw triples
-        :rtype: list
+        :return: a set of raw triples
+        :rtype: set
         """
         sentences = sent_tokenize(document)
-        triples = []
+        triples = set()
         for sentence in sentences:
             try:
-                triples.append(self.extractor.extract(sentence))
+                triples.update(self.extractor.extract(sentence))
             except JSONDecodeError as e:
                 print(e.msg)
         # TODO: The triples are currently stored in a flat list. Should we change it to list of lists (separated by sentences)?
-        return [triple for sentence in triples for triple in sentence]
+        return triples
 
     def remove_stopwords(self, all_triples):
         """
         Remove stopwords from individual Subject and Object.
         Currently, this is only done when the extraction scope is 'named_entities' or 'noun_phrases'.
-        :param all_triples: a list of triples
-        :type all_triples: list
-        :return: a list of triples in which stopwords have been removed from the Subjects and Objects
+        :param all_triples: a set of triples
+        :type all_triples: set
+        :return: a set of triples in which stopwords have been removed from the Subjects and Objects
         :rtype: list
         """
         all_stopwords = self.nlp.Defaults.stop_words
@@ -146,10 +145,10 @@ class TripleProducer:
         Filter in only triples where the Subject and Object are both named entities
         :param spacy_doc: spacy document
         :type spacy_doc: spacy.tokens.Doc
-        :param all_triples: a list of triples
-        :type all_triples: list
-        :return: a list of triples in which the Subjects and Objects are all named entities
-        :rtype: list
+        :param all_triples: a set of triples
+        :type all_triples: set
+        :return: a set of triples in which the Subjects and Objects are all named entities
+        :rtype: set
         """
         entities = [ent.text for ent in spacy_doc.ents]
         return self.__filter(entities, all_triples)
@@ -160,10 +159,10 @@ class TripleProducer:
         Filter in only triples where the Subject and Object are both noun phrases
         :param spacy_doc: spacy document
         :type spacy_doc: spacy.tokens.Doc
-        :param all_triples: a list of triples
-        :type all_triples: list
-        :return: a list of triples in which the Subjects and Objects are all noun phrases
-        :rtype: list
+        :param all_triples: a set of triples
+        :type all_triples: set
+        :return: a set of triples in which the Subjects and Objects are all noun phrases
+        :rtype: set
         """
         noun_phrases = [chunk.text for chunk in spacy_doc.noun_chunks]
         return self.__filter(noun_phrases, all_triples)
@@ -173,10 +172,10 @@ class TripleProducer:
         Filter in only triples where the Subject and Object are in the in_list argument.
         :param in_list: list of acceptable Subjects and Objects
         :type in_list: list
-        :param all_triples: a list of triples
-        :type all_triples: list
-        :return: a list of triples in which the Subjects and Objects are all in the in_list argument
-        :rtype: list
+        :param all_triples: a set of triples
+        :type all_triples: set
+        :return: a set of triples in which the Subjects and Objects are all in the in_list argument
+        :rtype: set
         """
         filtered_triples = []
         for triple in all_triples:
@@ -212,11 +211,11 @@ class TripleProducer:
         if they are spotted using DBpedia Spotlight API.
         :param document: document
         :type document: str
-        :param all_triples: a list of triples
-        :type all_triples: list
-        :return: a list of triples where the Subjects and Objects have been replaced with DBpedia entity resources,
+        :param all_triples: a set of triples
+        :type all_triples: set
+        :return: a set of triples where the Subjects and Objects have been replaced with DBpedia entity resources,
         if possible
-        :rtype: list
+        :rtype: set
         """
         # Do we need to split the sentences first or not? May help with context if not?
         # sentences = sent_tokenize(document)
@@ -250,10 +249,10 @@ class TripleProducer:
         Link relations to DBpedia Ontology using Falcon, if available.
         :param document: document
         :type document: str
-        :param all_triples: list of triples
-        :type all_triples: list
-        :return: new list of triples with dbpedia relations
-        :rtype list
+        :param all_triples: set of triples
+        :type all_triples: set
+        :return: new set of triples with dbpedia relations
+        :rtype set
         """
         response = requests.post(self.FALCON_URL,
                                  data='{"text": "%s"}' % document,
@@ -268,7 +267,6 @@ class TripleProducer:
                 return None
 
         if relations is not None:
-            relations_in_triples = [triple.relation for triple in all_triples]
             dbpedia_relations = [rel[0] for rel in relations]
             raw_relations = [rel[1] for rel in relations]
             # TODO: Change list to set
@@ -279,9 +277,9 @@ class TripleProducer:
                                         triple.objects)
                     new_triples.add(new_triple)
             for i, rel in enumerate(raw_relations):
-                index = [idx for idx, s in enumerate(relations_in_triples) if rel in s]
-                if len(index) > 0:
-                    new_triple = Triple(all_triples[index[0]].subject, dbpedia_relations[i], all_triples[index[0]].objects)
+                triple = [triple for triple in all_triples if rel in triple.relation]
+                if len(triple) > 0:
+                    new_triple = Triple(triple[0].subject, dbpedia_relations[i], triple[0].objects)
                     new_triples.add(new_triple)
             return new_triples
         else:
@@ -292,10 +290,10 @@ class TripleProducer:
         Lemmatise relations to their based forms.
         :param spacy_doc: spacy document
         :type spacy_doc: spacy.tokens.Doc
-        :param all_triples: list of triples
-        :type all_triples: list
-        :return: list of triples where relations have been lemmatised
-        :rtype: list
+        :param all_triples: set of triples
+        :type all_triples: set
+        :return: set of triples where relations have been lemmatised
+        :rtype: set
         """
         all_stopwords = self.nlp.Defaults.stop_words
         for triple in all_triples:
@@ -310,10 +308,10 @@ class TripleProducer:
     def convert_relations(self, all_triples):
         """
         Prepend all relations with "http://dbpedia.org/ontology/", even if the relation doesn't exist in DBpedia.
-        :param all_triples: list of triples
-        :type all_triples: list
-        :return: list of triples, where relations have been converted
-        :rtype: list
+        :param all_triples: set of triples
+        :type all_triples: set
+        :return: set of triples, where relations have been converted
+        :rtype: set
         """
         for triple in all_triples:
             triple.relation = "http://dbpedia.org/ontology/" + self.__camelise(triple.relation)

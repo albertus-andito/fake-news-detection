@@ -1,7 +1,7 @@
 # Script to get SPO triples from second dataset (from https://github.com/parthpatwa/covid19-fake-news-detection)
 
 
-from TripleProducer import TripleProducer
+from tripleproducer import TripleProducer
 import pprint
 import pandas as pd
 

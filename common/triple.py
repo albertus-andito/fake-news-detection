@@ -27,6 +27,9 @@ class Triple:
     def to_json(self):
         return json.dumps(self, default=lambda o: o.__dict__)
 
+    def to_dict(self):
+        return {'subject': self.subject, 'relation': self.relation, 'objects': self.objects}
+
 
 if __name__ == '__main__':
     triple = Triple('UV rays', 'cure', ['abc', 'COVID 19'])

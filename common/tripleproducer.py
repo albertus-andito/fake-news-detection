@@ -83,7 +83,8 @@ class TripleProducer:
         all_triples = self.spot_entities_with_context(document, all_triples)
 
         # link relations using Falcon
-        triples_with_linked_relations = self.link_relations(document, all_triples)
+        # triples_with_linked_relations = self.link_relations(document, all_triples)
+        triples_with_linked_relations = None
 
         # lemmatise relations
         all_triples = self.lemmatise_relations(spacy_doc, all_triples)

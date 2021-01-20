@@ -3,7 +3,7 @@ import logging
 import os
 import schedule
 import time
-from article_scraper.scrapers import IndependentScraper, BbcScraper, GuardianScraper
+from articlescraper.scrapers import IndependentScraper, BbcScraper, GuardianScraper
 from dotenv import load_dotenv
 from pathlib import Path
 from pymongo import MongoClient
@@ -58,7 +58,7 @@ class NewsPoller:
         :param rss_url: News feed RSS URL
         :type rss_url: str
         :param scraper: Scraper for the corresponding news website
-        :type scraper: article_scraper.ArticleScraper
+        :type scraper: articlescraper.ArticleScraper
         """
         NewsPoller.logger.info('Polling %s ...', rss_url)
         entries = feedparser.parse(rss_url)['entries']

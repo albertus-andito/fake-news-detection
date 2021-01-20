@@ -1,6 +1,6 @@
 # Script to get SPO triples from first dataset (from https://zenodo.org/record/4282522)
 
-from TripleProducer import TripleProducer
+from tripleproducer import TripleProducer
 import pprint
 import pandas as pd
 

@@ -1,7 +1,6 @@
 from json import JSONDecodeError
 from nltk.tokenize import sent_tokenize, word_tokenize
 from spacy.matcher import Matcher
-from spacy.tokens import Token
 from triple import Triple
 from tripleextractors import StanfordExtractor, IITExtractor
 import json
@@ -260,20 +259,24 @@ class TripleProducer:
         :return: new set of triples with dbpedia relations
         :rtype set
         """
-        response = requests.post(self.FALCON_URL,
-                                 data='{"text": "%s"}' % document.encode('unicode_escape'),
-                                 headers={"Content-Type": "application/json"})
-        if response.status_code != 200:
-            print(response.text)
-            return None
-        else:
+        relations = []
+        for sentence in sent_tokenize(document):
             try:
-                relations = response.json()["relations"]
-            except json.decoder.JSONDecodeError as e:
-                print(e.msg)
-                return None
+                response = requests.post(self.FALCON_URL,
+                                     data='{"text": "%s"}' % self.__fix_encoding(sentence),
+                                     headers={"Content-Type": "application/json"})
+            except Exception as e:
+                print(e)
+            if response.status_code != 200:
+                print(response.text)
+            else:
+                try:
+                    relations += response.json()["relations"]
+                except json.decoder.JSONDecodeError as e:
+                    print(e.msg)
+                    return None
 
-        if relations is not None:
+        if len(relations) > 0:
             dbpedia_relations = [rel[0] for rel in relations]
             raw_relations = [rel[1] for rel in relations]
             # TODO: Change list to set
@@ -291,6 +294,13 @@ class TripleProducer:
             return new_triples
         else:
             return None
+
+    def __fix_encoding(self, sentence):
+        return sentence.replace('"', '\\"')\
+                       .replace('“', '\\"')\
+                       .replace('”', '\\"')\
+                       .replace('’', '\'')\
+                       .replace('–', '-')
 
     def lemmatise_relations(self, spacy_doc, all_triples):
         """

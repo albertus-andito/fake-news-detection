@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 from pyopenie import OpenIE5
 from stanfordcorenlp import StanfordCoreNLP
-from Triple import Triple
+from triple import Triple
 
 
 class TripleExtractor(ABC):
@@ -31,7 +31,7 @@ class StanfordExtractor(TripleExtractor):
     props = {'annotators': 'openie', 'pipelineLanguage': 'en', 'outputFormat': 'json'}
 
     def __init__(self):
-        load_dotenv(dotenv_path=Path('./.env'))
+        load_dotenv(dotenv_path=Path('../.env'))
         self.coreNLP = StanfordCoreNLP(os.getenv("STANFORD_CORE_NLP_PATH"))
 
     def __del__(self):
@@ -60,7 +60,7 @@ class IITExtractor(TripleExtractor):
     Triple extraction using IIT OpenIE (https://github.com/vaibhavad/python-wrapper-OpenIE5)
     """
     def __init__(self):
-        load_dotenv(dotenv_path=Path('./.env'))
+        load_dotenv(dotenv_path=Path('../.env'))
         self.openie = OpenIE5(os.getenv("IIT_OPENIE_URL"))
 
     def extract(self, document):

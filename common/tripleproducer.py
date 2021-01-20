@@ -1,7 +1,8 @@
 from json import JSONDecodeError
 from nltk.tokenize import sent_tokenize, word_tokenize
-from Triple import Triple
-from TripleExtractors import StanfordExtractor, IITExtractor
+from spacy.matcher import Matcher
+from triple import Triple
+from tripleextractors import StanfordExtractor, IITExtractor
 import json
 import neuralcoref
 import pprint
@@ -89,7 +90,11 @@ class TripleProducer:
 
         # convert relations to dbpedia format
         all_triples = self.convert_relations(all_triples)
-        all_triples = list(all_triples.union(triples_with_linked_relations))
+
+        if triples_with_linked_relations is not None:
+            all_triples = list(all_triples.union(triples_with_linked_relations))
+        else:
+            all_triples = list(all_triples)
 
         # TODO: might still want to match subject/object to DBpedia, even if they're not really named entities?
         # TODO: extract relation???
@@ -255,10 +260,11 @@ class TripleProducer:
         :rtype set
         """
         response = requests.post(self.FALCON_URL,
-                                 data='{"text": "%s"}' % document,
+                                 data='{"text": "%s"}' % document.encode('unicode_escape'),
                                  headers={"Content-Type": "application/json"})
         if response.status_code != 200:
             print(response.text)
+            return None
         else:
             try:
                 relations = response.json()["relations"]
@@ -297,13 +303,18 @@ class TripleProducer:
         """
         all_stopwords = self.nlp.Defaults.stop_words
         for triple in all_triples:
-            relation = [word for word in word_tokenize(triple.relation) if word not in all_stopwords]
-            triple.relation = ' '.join([spacy_tok.lemma_ for token in relation for spacy_tok in spacy_doc
-                                        if token == spacy_tok.text])
+            relation = [word for word in word_tokenize(triple.relation.replace('[', '').replace(']', '')) if
+                        word not in all_stopwords]
+            triple.relation = ' '.join([self.__match(token, spacy_doc).lemma_ for token in relation])
             if not triple.relation:
                 triple.relation = "is"
-
         return all_triples
+
+    def __match(self, token, spacy_doc):
+        matcher = Matcher(self.nlp.vocab)
+        matcher.add(token, None, [{"TEXT": token}])
+        match = (matcher(spacy_doc)[0])
+        return spacy_doc[match[1]:match[2]]
 
     def convert_relations(self, all_triples):
         """
@@ -314,6 +325,7 @@ class TripleProducer:
         :rtype: set
         """
         for triple in all_triples:
+            print(triple)
             triple.relation = "http://dbpedia.org/ontology/" + self.__camelise(triple.relation)
         return all_triples
 

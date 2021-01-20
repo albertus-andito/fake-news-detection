@@ -1,6 +1,7 @@
 from json import JSONDecodeError
 from nltk.tokenize import sent_tokenize, word_tokenize
 from spacy.matcher import Matcher
+from spacy.tokens import Token
 from triple import Triple
 from tripleextractors import StanfordExtractor, IITExtractor
 import json
@@ -305,16 +306,18 @@ class TripleProducer:
         for triple in all_triples:
             relation = [word for word in word_tokenize(triple.relation.replace('[', '').replace(']', '')) if
                         word not in all_stopwords]
-            triple.relation = ' '.join([self.__match(token, spacy_doc).lemma_ for token in relation])
+            triple.relation = ' '.join([self.__get_lemma(token, spacy_doc) for token in relation])
             if not triple.relation:
                 triple.relation = "is"
         return all_triples
 
-    def __match(self, token, spacy_doc):
+    def __get_lemma(self, token, spacy_doc):
         matcher = Matcher(self.nlp.vocab)
         matcher.add(token, None, [{"TEXT": token}])
+        if len(matcher(spacy_doc)) == 0:
+            return ''
         match = (matcher(spacy_doc)[0])
-        return spacy_doc[match[1]:match[2]]
+        return spacy_doc[match[1]:match[2]].lemma_
 
     def convert_relations(self, all_triples):
         """
@@ -325,7 +328,6 @@ class TripleProducer:
         :rtype: set
         """
         for triple in all_triples:
-            print(triple)
             triple.relation = "http://dbpedia.org/ontology/" + self.__camelise(triple.relation)
         return all_triples
 

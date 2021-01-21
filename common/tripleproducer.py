@@ -92,14 +92,14 @@ class TripleProducer:
         # convert relations to dbpedia format
         all_triples = self.convert_relations(all_triples)
 
-        if triples_with_linked_relations is not None:
-            all_triples = list(all_triples.union(triples_with_linked_relations))
-        else:
-            all_triples = list(all_triples)
+        if triples_with_linked_relations is not None and len(triples_with_linked_relations) > 0:
+            all_triples = all_triples.union(triples_with_linked_relations)
 
         # TODO: might still want to match subject/object to DBpedia, even if they're not really named entities?
+        all_triples = self.convert_subjects(all_triples)
         # TODO: extract relation???
-        return all_triples
+
+        return list(all_triples)
 
     def coref_resolution(self, spacy_doc):
         """
@@ -356,6 +356,20 @@ class TripleProducer:
         else:
             s = "".join(word[0].upper() + word[1:].lower() for word in words)
             return s[0].lower() + s[1:]
+        
+    def convert_subjects(self, all_triples):
+        """
+        Prepend all subjects with "http://dbpedia.org/resource/" if the subject hasn't been spotted yet as a DBpedia entity.
+        :param all_triples: set of triples
+        :type all_triples: set
+        :return: set of triples, where all subjects are dbpedia resources
+        :rtype: set
+        """
+        dbpedia = "http://dbpedia.org/resource/"
+        for triple in all_triples:
+            if not triple.subject.startswith(dbpedia):
+                triple.subject = dbpedia+triple.subject.replace(" ", "_")
+        return all_triples
 
 
 # Testing

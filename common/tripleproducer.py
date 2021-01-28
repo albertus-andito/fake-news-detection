@@ -339,7 +339,7 @@ class TripleProducer:
         :rtype: set
         """
         for triple in all_triples:
-            triple.relation = "http://dbpedia.org/ontology/" + self.__camelise(triple.relation)
+            triple.relation = "http://dbpedia.org/ontology/" + self.__camelise(triple.relation).lstrip()
         return all_triples
 
     def __camelise(self, sentence):

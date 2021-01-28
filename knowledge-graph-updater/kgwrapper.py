@@ -223,3 +223,7 @@ if __name__ == '__main__':
 
     triples = wrapper.get_entity("http://dbpedia.org/resource/Mr_Giuliani")
     print(triples)
+
+    # wrapper.delete_triple("http://dbpedia.org/resource/Mr_Giuliani", "http://dbpedia.org/ontology/repeat", "unsubstantiated claims")
+    wrapper.delete_triple("http://dbpedia.org/resource/Mr_Giuliani", "http://dbpedia.org/ontology/claim",
+                          "http://dbpedia.org/resource/Electoral_fraud")

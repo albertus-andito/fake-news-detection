@@ -225,5 +225,5 @@ if __name__ == '__main__':
     print(triples)
 
     # wrapper.delete_triple("http://dbpedia.org/resource/Mr_Giuliani", "http://dbpedia.org/ontology/repeat", "unsubstantiated claims")
-    wrapper.delete_triple("http://dbpedia.org/resource/Mr_Giuliani", "http://dbpedia.org/ontology/claim",
-                          "http://dbpedia.org/resource/Electoral_fraud")
+    # wrapper.delete_triple("http://dbpedia.org/resource/Mr_Giuliani", "http://dbpedia.org/ontology/claim",
+    #                       "http://dbpedia.org/resource/Electoral_fraud")

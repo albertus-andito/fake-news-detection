@@ -112,6 +112,11 @@ class KnowledgeGraphUpdater:
                                                                                'objects': triple['objects']}}},
                                                    {'$set': {'triples.$.added': False}}
                                                    )
+            self.db_triples_collection.update_one({'subject': triple['subject'],
+                                                   'relation': triple['relation'],
+                                                   'objects': triple['objects']},
+                                                  {'$set': {'added': False}})
+
 
     def get_all_pending_knowledge(self):
         articles = []
@@ -127,22 +132,32 @@ class KnowledgeGraphUpdater:
             print(article['source'])
             stored_triples = self.db_article_collection.find_one({'source': article['source']})['triples']
             for triple in article['triples']:
+
+                self.knowledge_graph.insert_triple_object(Triple.from_dict(triple))
                 if triple in stored_triples:
-                    self.knowledge_graph.insert_triple_object(Triple.from_dict(triple))
                     self.db_article_collection.update_one({'source': article['source'],
                                                            'triples': {'$elemMatch': {'subject': triple['subject'],
                                                                                       'relation': triple['relation'],
                                                                                       'objects': triple['objects']}}},
                                                           {'$set': {'triples.$.added': True}}
                                                           )
+                else:
+                    # accommodate triples about the article that are manually inserted
+                    self.db_article_collection.update_one({'source': article['source']},
+                                                          {'$push': {'triples': {
+                                                              {'subject': triple['subject'],
+                                                               'relation': triple['relation'],
+                                                               'objects': triple['objects'],
+                                                               'added': True}
+                                                          }}})
 
     def insert_knowledge(self, triple, check_conflict):
         self.db_triples_collection.replace_one({'subject': triple['subject'],
                                                 'relation': triple['relation'],
                                                 'objects': triple['objects']},
                                                triple, upsert=True)
-        # TODO: need to check if the exact triples are already in the knowledge graph?
         if check_conflict:
+            # check if the exact triples are already in the knowledge graph?
             exists = self.knowledge_graph.check_triple_object_existence(Triple.from_dict(triple))
             if not exists:
                 conflicts = self.knowledge_graph.get_triples(triple['subject'], triple['relation'])
@@ -157,6 +172,8 @@ class KnowledgeGraphUpdater:
     # TODO: delete knowledge
 
     # TODO: get entity
+    def get_entity(self, subject):
+        return self.knowledge_graph.get_entity('http://dbpedia.org/resource/' + subject)
 
 
 if __name__ == '__main__':

@@ -60,7 +60,18 @@ def delete_all_article_triples():
 
 @kgu_api.route('/article_triples/')
 def triples_from_articles():
-    return kgu.get_all_pending_knowledge(), 200
+    return {'pending': kgu.get_all_pending_knowledge()}, 200
+
+
+@kgu_api.route('/triples/confirm/', methods=['POST'])
+def force_insert_triples():
+    data = request.get_json()
+    if type(data) is list:
+        for triple in data:
+            kgu.insert_knowledge(triple, check_conflict=False)
+    else:
+        kgu.insert_knowledge(data, check_conflict=False)
+    return {'message': 'All triples inserted.'}, 200
 
 
 @kgu_api.route('/triples/', methods=['POST'])
@@ -80,8 +91,20 @@ def insert_triples():
     return {'message': 'All triples inserted.'}, 200
 
 
+@kgu_api.route('/triples/', methods=['DELETE'])
+def delete_triples():
+    data = request.get_json()
+    if type(data) is list:
+        kgu.delete_knowledge(data)
+    else:
+        kgu.delete_knowledge([data])
+    return {'message': 'Triples deleted.'}, 200
 
 
+@kgu_api.route('/entity/<subject>')
+def get_entity(subject):
+    triples = [triple.to_dict() for triple in kgu.get_entity(subject)]
+    return {'triples': triples}, 200
 
 
 

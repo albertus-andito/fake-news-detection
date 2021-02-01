@@ -1,8 +1,6 @@
 from flask import Blueprint, request
 from kgupdater import KnowledgeGraphUpdater
 import threading
-import urllib.parse
-import json
 
 kgu = KnowledgeGraphUpdater()
 
@@ -27,18 +25,46 @@ updating = False
 
 @kgu_api.route('/updates/status/')
 def updates_status():
+    """
+    Checks the status of the update_missed_knowledge operation.
+    There can only be one update_missed_knowledge operation running at a time.
+    ---
+    responses:
+      202:
+        description: The update operation is still processing.
+      200:
+        description: The update operation is done. Another request to update can be made.
+    """
     if updating is True:
-        return {"message": "Still processing..."}, 202
-    return {"message": "Done. Another request can be made."}, 200
+        return {'message': 'Still processing...'}, 202
+    return {'message': 'Done. Another request to update can be made.'}, 200
 
 
-@kgu_api.route('/updates/')
+@kgu_api.route('/updates')
 def trigger_updates():
+    """
+    Triggers an update that will extract triples from stored articles, and add non-conflicting triples to knowledge graph, if specified.
+    ---
+    parameters:
+      - name: auto_update
+        in: query
+        description: whether the non-conflicting extracted triples are added to the knowledge graph automatically or not.
+        required: false
+        type: Boolean
+        default: false
+    responses:
+      202:
+        description: Request to update is submitted and being processed.
+      409:
+        description: An update is already in progress. Check /kgu/updates/status for the status of the update.
+    """
     if updating is False:
-        async_task = AsyncUpdate(kgu)
+        print(request.args.get('auto_update'))
+        auto_update = True if request.args.get('auto_update') == 'true' else False
+        async_task = AsyncUpdate(kgu, kg_auto_update=auto_update)
         async_task.start()
-        return {"message": "Request submitted. Update is processing..."}, 202
-    return {"message": "An update is already in process. Check /updates/status for the status"}, 409
+        return {'message': 'Request submitted. Update is processing...'}, 202
+    return {'message': 'An update is already in progress. Check /kgu/updates/status for the status'}, 409
 
 
 @kgu_api.route('/article-triples/insert/', methods=['POST'])
@@ -48,15 +74,26 @@ def insert_article_triples():
     return {"message": "Triples inserted."}, 200
 
 
-@kgu_api.route('/article-triples/delete', methods=['POST'])
-def delete_all_article_triples():
-    data = request.get_json()
-    if type(data) is list:
-        for article in data:
-            kgu.delete_all_knowledge_from_article(article['source_url'])
-    else:
-        kgu.delete_all_knowledge_from_article(data['source_url'])
-    return {"message": "All triples deleted."}, 200
+@kgu_api.route('/article-triples/delete/<path:article_url>')
+def delete_all_article_triples(article_url):
+    """
+    Removes all triples of the specified article from the knowledge graph.
+    ---
+    parameters:
+      - name: article_url
+        in: path
+        description: URL of article whose triples are going to be removed from the knowledge graph.
+        type: string
+        required: true
+    responses:
+      200:
+        description: All triples from the article have been successfully deleted.
+    :param article_url: URL of article whose triples are going to be removed from the knowledge graph.
+    :type article_url: str
+    :return JSON message
+    """
+    kgu.delete_all_knowledge_from_article(article_url)
+    return {'article_url': article_url, 'message': 'All triples deleted.'}, 200
 
 
 @kgu_api.route('/article-triples/conflicts', methods=['GET'])
@@ -148,16 +185,24 @@ def get_entity(subject):
     return {'triples': triples}, 200
 
 
-
-
-
 class AsyncUpdate(threading.Thread):
-    def __init__(self, kgu):
+    """
+    A wrapper for doing update_missed_knowledge asynchronously, so that other endpoints can still be called while this
+    operation is running.
+    There could only be 1 thread of this running at a time.
+    When running, the "updating" flag is set to True, preventing another thread of this to be created.
+    """
+    def __init__(self, kgu, kg_auto_update=None):
         super().__init__()
         self.kgu = kgu
+        if kg_auto_update is not None:
+            self.kg_auto_update = kg_auto_update
+        else:
+            self.kg_auto_update = False
 
     def run(self):
         global updating
         updating = True
-        kgu.update_missed_knowledge()
+        print(self.kg_auto_update)
+        kgu.update_missed_knowledge(kg_auto_update=self.kg_auto_update)
         updating = False

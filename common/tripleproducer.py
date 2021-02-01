@@ -92,6 +92,8 @@ class TripleProducer:
         # convert relations to dbpedia format
         all_triples = self.convert_relations(all_triples)
 
+        # FIXME: currently, because falcon is commented out, the line below is not executed, so that
+        #  set is not exactly unique? because union is not performed?
         if triples_with_linked_relations is not None and len(triples_with_linked_relations) > 0:
             all_triples = all_triples.union(triples_with_linked_relations)
 

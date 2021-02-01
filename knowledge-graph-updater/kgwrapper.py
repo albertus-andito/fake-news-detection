@@ -153,7 +153,7 @@ class KnowledgeGraphWrapper:
         self.logger.info("Inserting triple: %s, %s, %s", subject, relation, obj)
         results = self.sparql.query()
         if results.response.status != 200:
-            raise Exception("Get entity failed with status code " + results.responses.status)
+            raise Exception("Insert triple failed with status code " + results.responses.status)
 
     def delete_triple_object(self, triple):
         """

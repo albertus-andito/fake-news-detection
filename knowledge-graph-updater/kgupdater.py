@@ -1,3 +1,4 @@
+import logging
 import logging.config
 import os
 import pprint
@@ -10,6 +11,8 @@ from kgwrapper import KnowledgeGraphWrapper
 from triple import Triple
 from tripleproducer import TripleProducer
 
+
+# TODO: Haven't considered the headlines, only the texts for now. Might want to include the headlines to be extracted.
 
 class KnowledgeGraphUpdater:
     """
@@ -27,11 +30,11 @@ class KnowledgeGraphUpdater:
         self.logger = logging.getLogger()
 
         load_dotenv(dotenv_path=Path('../.env'))
-        self.db_client = MongoClient(os.getenv("MONGODB_ADDRESS"))
-        self.db = self.db_client["fnd"]
-        self.db_article_collection = self.db["articles"]
-        self.db_article_collection.create_index("source", unique=True)
-        self.db_triples_collection = self.db["triples"]
+        self.db_client = MongoClient(os.getenv('MONGODB_ADDRESS'))
+        self.db = self.db_client['fnd']
+        self.db_article_collection = self.db['articles']
+        self.db_article_collection.create_index('source', unique=True)
+        self.db_triples_collection = self.db['triples']
 
         self.triple_producer = TripleProducer(extractor_type='stanford_openie', extraction_scope='noun_phrases')
         self.knowledge_graph = KnowledgeGraphWrapper()
@@ -40,35 +43,39 @@ class KnowledgeGraphUpdater:
         else:
             self.auto_update = auto_update
 
-    def update_missed_knowledge(self):
+    def update_missed_knowledge(self, kg_auto_update=None):
         """
         Extract triples from stored articles whose triples has not been extracted yet, and save the triples to the DB.
         Triples that have conflicts in the knowledge graph are identified.
-        If the auto_update mode is active, the triples are added to the knowledge graph.
+        If the auto_update mode is active, the non-conflicting triples are added to the knowledge graph.
+        :param kg_auto_update: an optional parameter that sets whether the non-conflicting triples are added to the
+        knowledge graph or not. This will only matter if the auto_update field is False. If the auto_update field is
+        already True, then this parameter will not be looked upon.
+        :type kg_auto_update: bool
         """
-        for article in self.db_article_collection.find({"triples": None}):
-            print(' '.join(article["texts"]))
-            triples = [{**triple.to_dict(), **{"added": False}} for triple in
-                       self.triple_producer.produce_triples(' '.join(article["texts"]))]
-            self.db_article_collection.update_one({"source": article["source"]}, {"$set": {"triples": triples}})
+        for article in self.db_article_collection.find({'triples': None}):
+            self.logger.info('Extracting triples for article: %s', article['source'])
+            # set 'added' to False for all triples initially
+            triples = [{**triple.to_dict(), **{'added': False}} for triple in
+                       self.triple_producer.produce_triples(' '.join(article['texts']))]
+            self.db_article_collection.update_one({'source': article['source']}, {'$set': {'triples': triples}})
 
             # check for conflict
             conflicted_triples = []
             for triple in triples:
-                conflicts = self.knowledge_graph.get_triples(triple["subject"], triple["relation"])
+                conflicts = self.knowledge_graph.get_triples(triple['subject'], triple['relation'])
                 if conflicts is not None:
                     for conflict in conflicts:
-                        del triple["added"]
-                        conflicted_triples.append({"toBeInserted": triple, "inKnowledgeGraph": conflict.to_dict()})
-            print(conflicted_triples)
-            if len(conflicted_triples) > 0:
-                self.db_article_collection.update_one({"source": article["source"]},
-                                                      {"$set": {"conflicts": conflicted_triples}})
+                        del triple['added']
+                        conflicted_triples.append({'toBeInserted': triple, 'inKnowledgeGraph': conflict.to_dict()})
+            self.logger.debug('Found conflicts for article %s: %s', article['source'], conflicted_triples)
 
-            if self.auto_update:
-                # self.insert_all_nonconflicting_knowledge(triples,
-                #                                          [conflict["toBeInserted"] for conflict in conflicted_triples])
-                self.insert_all_nonconflicting_knowledge(article["source"])
+            if len(conflicted_triples) > 0:  # save conflicts
+                self.db_article_collection.update_one({'source': article['source']},
+                                                      {'$set': {'conflicts': conflicted_triples}})
+
+            if self.auto_update or kg_auto_update is True:
+                self.insert_all_nonconflicting_knowledge(article['source'])
 
     def insert_all_nonconflicting_knowledge(self, article_url):
         """
@@ -76,16 +83,18 @@ class KnowledgeGraphUpdater:
         :param article_url: URL of the article source
         :type article_url: str
         """
-        article = self.db_article_collection.find_one({"source": article_url})
-        conflicts = [conflict["toBeInserted"] for conflict in article["conflicts"]]
-        for triple in article["triples"]:
-            del triple["added"]
+        article = self.db_article_collection.find_one({'source': article_url})
+        if 'conflicts' in article:
+            conflicts = [conflict['toBeInserted'] for conflict in article['conflicts']]
+        else:
+            conflicts = []
+
+        for triple in article['triples']:
             if triple not in conflicts:
                 self.knowledge_graph.insert_triple_object(Triple.from_dict(triple))
-                triple["added"] = True
-            else:
-                triple["added"] = False
-        self.db_article_collection.update_one({"source": article["source"]}, {"$set": {"triples": article["triples"]}})
+                triple['added'] = True
+
+        self.db_article_collection.update_one({'source': article['source']}, {'$set': {'triples': article['triples']}})
 
     def delete_all_knowledge_from_article(self, article_url):
         """
@@ -94,9 +103,10 @@ class KnowledgeGraphUpdater:
         :param article_url: URL of the article source
         :type article_url: str
         """
-        article = self.db_article_collection.find_one({"source": article_url})
-        if article["triples"] is not None:
-            self.delete_knowledge(article["triples"])
+        self.logger.info('Deleting triples of article: %s', article_url)
+        article = self.db_article_collection.find_one({'source': article_url})
+        if 'triples' in article:
+            self.delete_knowledge(article['triples'])
 
     def delete_knowledge(self, triples):
         """
@@ -106,11 +116,11 @@ class KnowledgeGraphUpdater:
         """
         for triple in triples:
             self.knowledge_graph.delete_triple_object(Triple.from_dict(triple))
+            # Need to update both triples from articles and from user input. We don't know where the triple was from.
             self.db_article_collection.update_many({'triples': {'$elemMatch': {'subject': triple['subject'],
                                                                                'relation': triple['relation'],
                                                                                'objects': triple['objects']}}},
-                                                   {'$set': {'triples.$.added': False}}
-                                                   )
+                                                   {'$set': {'triples.$.added': False}})
             self.db_triples_collection.update_one({'subject': triple['subject'],
                                                    'relation': triple['relation'],
                                                    'objects': triple['objects']},
@@ -141,7 +151,8 @@ class KnowledgeGraphUpdater:
     def get_all_articles_knowledge(self):
         # This function is memory expensive if the list is huge. It's better to add pagination etc.
         # TODO: add pagination
-        return list(self.db_article_collection.find({'triples': {'$exists': True}}, {'source': 1, 'triples': 1, '_id': 0}))
+        return list(
+            self.db_article_collection.find({'triples': {'$exists': True}}, {'source': 1, 'triples': 1, '_id': 0}))
 
     def get_article_conflicts(self, article_url):
         article = self.db_article_collection.find_one({'source': article_url, 'conflicts:': {'$exists': True}})

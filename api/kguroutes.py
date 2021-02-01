@@ -1,6 +1,7 @@
 from flask import Blueprint, request
 from kgupdater import KnowledgeGraphUpdater
 import threading
+import urllib.parse
 import json
 
 kgu = KnowledgeGraphUpdater()
@@ -40,14 +41,14 @@ def trigger_updates():
     return {"message": "An update is already in process. Check /updates/status for the status"}, 409
 
 
-@kgu_api.route('/article_triples/insert/', methods=['POST'])
+@kgu_api.route('/article-triples/insert/', methods=['POST'])
 def insert_article_triples():
     data = request.get_json()
     kgu.insert_articles_knowledge(data)
     return {"message": "Triples inserted."}, 200
 
 
-@kgu_api.route('/article_triples/delete/', methods=['POST'])
+@kgu_api.route('/article-triples/delete', methods=['POST'])
 def delete_all_article_triples():
     data = request.get_json()
     if type(data) is list:
@@ -58,9 +59,49 @@ def delete_all_article_triples():
     return {"message": "All triples deleted."}, 200
 
 
-@kgu_api.route('/article_triples/')
-def triples_from_articles():
+@kgu_api.route('/article-triples/conflicts', methods=['GET'])
+def conflicts_from_article():
+    article_url = request.args.get('source')
+    conflicts = kgu.get_article_conflicts(article_url)
+    if conflicts is None:
+        return {'source': article_url, 'message': 'No conflicts found for this article'}, 404
+    return {'source': article_url, 'conflicts': conflicts}, 200
+
+
+@kgu_api.route('/article-triples/conflicts/')
+def conflicts_from_articles():
+    return {'conflicts': kgu.get_all_article_conflicts()}, 200
+
+
+@kgu_api.route('/article-triples/pending')
+def pending_triples_from_article():
+    # TODO
+    article_url = request.args.get('source')
+    pending = kgu.get_article_pending_knowledge(article_url)
+    if pending is None:
+        return {'source': article_url, 'message': 'No pending triples (to be added to the knowledge graph) found for '
+                                                  'this article'}, 404
+    return {'source': article_url, 'pending': kgu.get_article_pending_knowledge(article_url)}
+
+
+@kgu_api.route('/article-triples/pending/')
+def pending_triples_from_articles():
     return {'pending': kgu.get_all_pending_knowledge()}, 200
+
+
+@kgu_api.route('/article-triples')
+def triples_from_article():
+    article_url = request.args.get('source')
+    triples = kgu.get_article_knowledge(article_url)
+    if triples is None:
+        return {'source': article_url, 'message': 'Triples haven\'t been extracted from this article. Please call the '
+                                                  '/kgu/updates/ endpoint.'}, 404
+    return {'source': article_url, 'triples': triples}, 200
+
+
+@kgu_api.route('/article-triples/')
+def triples_from_articles():
+    return {'triples': kgu.get_all_articles_knowledge()}, 200
 
 
 @kgu_api.route('/triples/confirm/', methods=['POST'])

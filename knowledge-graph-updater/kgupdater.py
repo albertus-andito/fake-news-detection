@@ -74,7 +74,7 @@ class KnowledgeGraphUpdater:
                 self.db_article_collection.update_one({'source': article['source']},
                                                       {'$set': {'conflicts': conflicted_triples}})
 
-            if self.auto_update or kg_auto_update is True:
+            if (kg_auto_update is None and self.auto_update) or kg_auto_update:
                 self.insert_all_nonconflicting_knowledge(article['source'])
 
     def insert_all_nonconflicting_knowledge(self, article_url):
@@ -90,10 +90,15 @@ class KnowledgeGraphUpdater:
             conflicts = []
 
         for triple in article['triples']:
+            # We need to delete the 'added' field first because we want to check equality with 'conflicts' list.
+            # By default, the 'added' field should have been False anyway at this stage, because the triple hasn't been
+            # inserted.
+            del triple['added']
             if triple not in conflicts:
                 self.knowledge_graph.insert_triple_object(Triple.from_dict(triple))
                 triple['added'] = True
-
+            else:
+                triple['added'] = False
         self.db_article_collection.update_one({'source': article['source']}, {'$set': {'triples': article['triples']}})
 
     def delete_all_knowledge_from_article(self, article_url):
@@ -127,40 +132,81 @@ class KnowledgeGraphUpdater:
                                                   {'$set': {'added': False}})
 
     def get_article_pending_knowledge(self, article_url):
+        """
+        Returns all pending triples (that are not currently in the knowledge graph) for the specified article.
+        :param article_url: URL of the article source
+        :type article_url: str
+        :return: list of pending triples extracted from the article if exist, or None
+        :rtype: list or None
+        """
         article = self.db_article_collection.find_one({'source': article_url, 'triples': {'$exists': True}})
         if article is None:
             return None
         return [triple for triple in article['triples'] if triple['added'] is False]
 
     def get_all_pending_knowledge(self):
+        """
+        Returns all pending triples (that are not currently in the knowledge graph) for all scraped articles.
+        :return: list of all pending triples extracted from all articles
+        :rtype: list
+        """
         # TODO: add pagination
         articles = []
-        for article in self.db_article_collection.find({"triples": {"$exists": True}}):
-            articles.append({
-                "source": article["source"],
-                "triples": [triple for triple in article["triples"] if triple["added"] is False]
-            })
+        for article in self.db_article_collection.find({'triples': {'$exists': True}}):
+            pending = [triple for triple in article['triples'] if triple['added'] is False]
+            if len(pending) > 0:
+                articles.append({
+                    'source': article['source'],
+                    'triples': pending
+                })
         return articles
 
     def get_article_knowledge(self, article_url):
+        """
+        Returns all triples of that have been extracted from the specified article, regardless of whether the triple
+        has been added to the knowledge graph or not.
+        :param article_url: URL of the article source
+        :type article_url: str
+        :return: list of triples extracted from the article if exist, or None
+        :rtype: list or None
+        """
         article = self.db_article_collection.find_one({'source': article_url, 'triples': {'$exists': True}})
         if article is None:
             return None
         return article['triples']
 
     def get_all_articles_knowledge(self):
+        """
+        Returns all triples that have been extracted from all scraped articles.
+        :return: list of all triples extracted from all articles
+        :rtype: list
+        """
         # This function is memory expensive if the list is huge. It's better to add pagination etc.
         # TODO: add pagination
         return list(
             self.db_article_collection.find({'triples': {'$exists': True}}, {'source': 1, 'triples': 1, '_id': 0}))
 
     def get_article_conflicts(self, article_url):
-        article = self.db_article_collection.find_one({'source': article_url, 'conflicts:': {'$exists': True}})
+        """
+        Returns conflicted triples of the specified article.
+        In this case, conflict means that subject and relation of a triple have already existed in the knowledge graph.
+        :param article_url: URL of the article source
+        :type article_url: str
+        :return: list of conflicted triples (in form of dictionaries) if exist, or None
+        :rtype: list or None
+        """
+        article = self.db_article_collection.find_one({'source': article_url, 'conflicts': {'$exists': True}})
         if article is None:
             return None
         return article['conflicts']
 
     def get_all_article_conflicts(self):
+        """
+        Returns all conflicted triples of all scraped articles.
+        :return: list of conflicted triples (in form of dictionaries, with their source article url)
+        :rtype: list
+        """
+        # This function is memory expensive if the list is huge. It's better to add pagination etc.
         # TODO: add pagination
         articles = []
         for article in self.db_article_collection.find({'conflicts': {'$exists': True}}):

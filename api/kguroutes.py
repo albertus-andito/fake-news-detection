@@ -88,12 +88,34 @@ def trigger_updates():
 
 @kgu_api.route('/article-triples/insert/', methods=['POST'])
 def insert_article_triples():
+    """
+    Insert triples that were extracted from articles to the knowledge graph.
+    ---
+    tags:
+      - Knowledge Graph Updater (Articles)
+    consumes:
+      - application/json
+    parameters:
+      - in: body
+        name: article_triples
+        schema:
+          id: article_triples_array
+          type: array
+          items:
+            $ref: '#/definitions/triples'
+        required: true
+    responses:
+      200:
+        description: Triples were inserted successfully.
+        schema:
+          id: standard_message
+    """
     data = request.get_json()
     kgu.insert_articles_knowledge(data)
     return {"message": "Triples inserted."}, 200
 
 
-@kgu_api.route('/article-triples/delete/<path:source>')
+@kgu_api.route('/article-triples/delete/<path:source>', methods=['DELETE'])
 def delete_all_article_triples(source):
     """
     Removes all triples of the specified article from the knowledge graph.
@@ -162,6 +184,9 @@ def conflicts_from_article(source):
                       type: array
                       items:
                         type: string
+                added:
+                  type: boolean
+                  description: whether the conflicted triple was added to the knowledge graph at some point
     parameters:
       - name: source
         in: path

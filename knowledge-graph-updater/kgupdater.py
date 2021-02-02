@@ -122,6 +122,7 @@ class KnowledgeGraphUpdater:
         for triple in triples:
             self.knowledge_graph.delete_triple_object(Triple.from_dict(triple))
             # Need to update both triples from articles and from user input. We don't know where the triple was from.
+            # TODO: do we need to care about 'added' in 'conflicts' field?
             self.db_article_collection.update_many({'triples': {'$elemMatch': {'subject': triple['subject'],
                                                                                'relation': triple['relation'],
                                                                                'objects': triple['objects']}}},
@@ -217,28 +218,45 @@ class KnowledgeGraphUpdater:
         return articles
 
     def insert_articles_knowledge(self, articles_triples):
+        """
+        Insert triples that are related to an article to the knowledge graph.
+        If the triple has conflict, mark the conflict as 'added' in the db.
+        If the triple doesn't exist on db, add the triple to the db.
+        :param articles_triples: dictionary of article triples
+        :type articles_triples: dict
+        """
         for article in articles_triples:
-            print(article['source'])
             stored_triples = self.db_article_collection.find_one({'source': article['source']})['triples']
             for triple in article['triples']:
-                # FIXME: check for conflict?
+                # FIXME: check for conflict? probably no need to
                 self.knowledge_graph.insert_triple_object(Triple.from_dict(triple))
                 if triple in stored_triples:
-                    self.db_article_collection.update_one({'source': article['source'],
-                                                           'triples': {'$elemMatch': {'subject': triple['subject'],
-                                                                                      'relation': triple['relation'],
-                                                                                      'objects': triple['objects']}}},
-                                                          {'$set': {'triples.$.added': True}}
-                                                          )
+                    self.db_article_collection.update_many({'source': article['source'],
+                                                            'triples': {'$elemMatch': {'subject': triple['subject'],
+                                                                                       'relation': triple['relation'],
+                                                                                       'objects': triple['objects']}}},
+                                                           {'$set': {'triples.$.added': True}}
+                                                           )
+                    self.db_article_collection.update_many({'source': article['source'],
+                                                            'conflicts':
+                                                                {'$elemMatch':
+                                                                    {'toBeInserted': {
+                                                                        'subject': triple['subject'],
+                                                                        'relation': triple['relation'],
+                                                                        'objects': triple['objects']}
+                                                                    }
+                                                                }
+                                                            },
+                                                           {'$set': {'conflicts.$.added': True}})
                 else:
                     # accommodate triples about the article that are manually inserted
                     self.db_article_collection.update_one({'source': article['source']},
-                                                          {'$push': {'triples': {
-                                                              {'subject': triple['subject'],
-                                                               'relation': triple['relation'],
-                                                               'objects': triple['objects'],
-                                                               'added': True}
-                                                          }}})
+                                                          {'$push': {'triples':
+                                                                         {'subject': triple['subject'],
+                                                                          'relation': triple['relation'],
+                                                                          'objects': triple['objects'],
+                                                                          'added': True}
+                                                                     }})
 
     def insert_knowledge(self, triple, check_conflict):
         self.db_triples_collection.replace_one({'subject': triple['subject'],

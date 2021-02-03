@@ -270,6 +270,13 @@ class KnowledgeGraphUpdater:
                                                                      }})
 
     def insert_knowledge(self, triple, check_conflict):
+        """
+        Insert triple to the knowledge graph.
+        :param triple:
+        :param check_conflict: whether it should check for conflicts first or not.
+        :type check_conflict: bool
+        :return: list of conflicts if there are conflicts and check_conflict is True, None otherwise
+        """
         self.db_triples_collection.replace_one({'subject': triple['subject'],
                                                 'relation': triple['relation'],
                                                 'objects': triple['objects']},
@@ -305,8 +312,14 @@ class KnowledgeGraphUpdater:
         if self.knowledge_graph.check_triple_object_existence(triple):
             return [triple.to_dict()]
 
-    # TODO: get entity need fix
     def get_entity(self, subject):
+        """
+        Returns all triples that has the subject parameter as the subject.
+        :param subject: subject in dbpedia format
+        :type subject: str
+        :return: list of Triples
+        :rtype: list
+        """
         return self.knowledge_graph.get_entity(subject)
 
 

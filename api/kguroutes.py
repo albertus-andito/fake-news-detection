@@ -1,16 +1,14 @@
 import logging
 import os
-
+import threading
 from flask import Blueprint, request
 
 from definitions import ROOT_DIR, LOGGER_CONFIG_PATH
 from kgupdater import KnowledgeGraphUpdater
-import threading
+
 
 kgu = KnowledgeGraphUpdater()
-
 kgu_api = Blueprint('kgu_api', __name__)
-
 
 LOGFILE_PATH = os.path.join(ROOT_DIR, 'logs', 'kgu-routes.log').replace("\\", "/")
 logging.config.fileConfig(LOGGER_CONFIG_PATH,
@@ -18,20 +16,7 @@ logging.config.fileConfig(LOGGER_CONFIG_PATH,
                           disable_existing_loggers=False)
 logger = logging.getLogger()
 
-@kgu_api.route('/')
-def hello_world():
-    return 'Hello, World!'
-
-
-@kgu_api.route('/test')
-def hello_test():
-    if False:
-        return kgu.test(), 201
-
-    return "bb", 300
-
-
-updating = False
+updating = False # flag for update_missed_knowledge operation
 
 
 @kgu_api.route('/updates/status/')

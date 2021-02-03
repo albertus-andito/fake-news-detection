@@ -1,7 +1,8 @@
 from json import JSONDecodeError
 from nltk.tokenize import sent_tokenize, word_tokenize
-from Triple import Triple
-from TripleExtractors import StanfordExtractor, IITExtractor
+from spacy.matcher import Matcher
+from triple import Triple
+from tripleextractors import StanfordExtractor, IITExtractor
 import json
 import neuralcoref
 import pprint
@@ -82,18 +83,25 @@ class TripleProducer:
         all_triples = self.spot_entities_with_context(document, all_triples)
 
         # link relations using Falcon
-        triples_with_linked_relations = self.link_relations(document, all_triples)
+        # triples_with_linked_relations = self.link_relations(document, all_triples)
+        triples_with_linked_relations = None
 
         # lemmatise relations
         all_triples = self.lemmatise_relations(spacy_doc, all_triples)
 
         # convert relations to dbpedia format
         all_triples = self.convert_relations(all_triples)
-        all_triples = list(all_triples.union(triples_with_linked_relations))
+
+        # FIXME: currently, because falcon is commented out, the line below is not executed, so that
+        #  set is not exactly unique? because union is not performed?
+        if triples_with_linked_relations is not None and len(triples_with_linked_relations) > 0:
+            all_triples = all_triples.union(triples_with_linked_relations)
 
         # TODO: might still want to match subject/object to DBpedia, even if they're not really named entities?
+        all_triples = self.convert_subjects(all_triples)
         # TODO: extract relation???
-        return all_triples
+
+        return list(all_triples)
 
     def coref_resolution(self, spacy_doc):
         """
@@ -254,19 +262,24 @@ class TripleProducer:
         :return: new set of triples with dbpedia relations
         :rtype set
         """
-        response = requests.post(self.FALCON_URL,
-                                 data='{"text": "%s"}' % document,
-                                 headers={"Content-Type": "application/json"})
-        if response.status_code != 200:
-            print(response.text)
-        else:
+        relations = []
+        for sentence in sent_tokenize(document):
             try:
-                relations = response.json()["relations"]
-            except json.decoder.JSONDecodeError as e:
-                print(e.msg)
-                return None
+                response = requests.post(self.FALCON_URL,
+                                     data='{"text": "%s"}' % self.__fix_encoding(sentence),
+                                     headers={"Content-Type": "application/json"})
+            except Exception as e:
+                print(e)
+            if response.status_code != 200:
+                print(response.text)
+            else:
+                try:
+                    relations += response.json()["relations"]
+                except json.decoder.JSONDecodeError as e:
+                    print(e.msg)
+                    return None
 
-        if relations is not None:
+        if len(relations) > 0:
             dbpedia_relations = [rel[0] for rel in relations]
             raw_relations = [rel[1] for rel in relations]
             # TODO: Change list to set
@@ -285,6 +298,13 @@ class TripleProducer:
         else:
             return None
 
+    def __fix_encoding(self, sentence):
+        return sentence.replace('"', '\\"')\
+                       .replace('“', '\\"')\
+                       .replace('”', '\\"')\
+                       .replace('’', '\'')\
+                       .replace('–', '-')
+
     def lemmatise_relations(self, spacy_doc, all_triples):
         """
         Lemmatise relations to their based forms.
@@ -297,13 +317,20 @@ class TripleProducer:
         """
         all_stopwords = self.nlp.Defaults.stop_words
         for triple in all_triples:
-            relation = [word for word in word_tokenize(triple.relation) if word not in all_stopwords]
-            triple.relation = ' '.join([spacy_tok.lemma_ for token in relation for spacy_tok in spacy_doc
-                                        if token == spacy_tok.text])
+            relation = [word for word in word_tokenize(triple.relation.replace('[', '').replace(']', '')) if
+                        word not in all_stopwords]
+            triple.relation = ' '.join([self.__get_lemma(token, spacy_doc) for token in relation])
             if not triple.relation:
                 triple.relation = "is"
-
         return all_triples
+
+    def __get_lemma(self, token, spacy_doc):
+        matcher = Matcher(self.nlp.vocab)
+        matcher.add(token, None, [{"TEXT": token}])
+        if len(matcher(spacy_doc)) == 0:
+            return ''
+        match = (matcher(spacy_doc)[0])
+        return spacy_doc[match[1]:match[2]].lemma_
 
     def convert_relations(self, all_triples):
         """
@@ -314,7 +341,7 @@ class TripleProducer:
         :rtype: set
         """
         for triple in all_triples:
-            triple.relation = "http://dbpedia.org/ontology/" + self.__camelise(triple.relation)
+            triple.relation = "http://dbpedia.org/ontology/" + self.__camelise(triple.relation).lstrip()
         return all_triples
 
     def __camelise(self, sentence):
@@ -331,6 +358,20 @@ class TripleProducer:
         else:
             s = "".join(word[0].upper() + word[1:].lower() for word in words)
             return s[0].lower() + s[1:]
+        
+    def convert_subjects(self, all_triples):
+        """
+        Prepend all subjects with "http://dbpedia.org/resource/" if the subject hasn't been spotted yet as a DBpedia entity.
+        :param all_triples: set of triples
+        :type all_triples: set
+        :return: set of triples, where all subjects are dbpedia resources
+        :rtype: set
+        """
+        dbpedia = "http://dbpedia.org/resource/"
+        for triple in all_triples:
+            if not triple.subject.startswith(dbpedia):
+                triple.subject = dbpedia+triple.subject.replace(" ", "_")
+        return all_triples
 
 
 # Testing

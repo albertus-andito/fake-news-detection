@@ -1,6 +1,6 @@
 import logging.config
 import os
-from article_scraper.poller import NewsPoller
+from articlescraper.poller import NewsPoller
 from definitions import ROOT_DIR, LOGGER_CONFIG_PATH
 
 

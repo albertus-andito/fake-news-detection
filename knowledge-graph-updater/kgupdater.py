@@ -65,8 +65,8 @@ class KnowledgeGraphUpdater:
             for triple in triples:
                 conflicts = self.knowledge_graph.get_triples(triple['subject'], triple['relation'])
                 if conflicts is not None:
+                    del triple['added']
                     for conflict in conflicts:
-                        del triple['added']
                         conflicted_triples.append({'toBeInserted': triple, 'inKnowledgeGraph': conflict.to_dict()})
             self.logger.debug('Found conflicts for article %s: %s', article['source'], conflicted_triples)
 
@@ -122,11 +122,22 @@ class KnowledgeGraphUpdater:
         for triple in triples:
             self.knowledge_graph.delete_triple_object(Triple.from_dict(triple))
             # Need to update both triples from articles and from user input. We don't know where the triple was from.
-            # TODO: do we need to care about 'added' in 'conflicts' field?
             self.db_article_collection.update_many({'triples': {'$elemMatch': {'subject': triple['subject'],
                                                                                'relation': triple['relation'],
                                                                                'objects': triple['objects']}}},
                                                    {'$set': {'triples.$.added': False}})
+            # TODO: do we need to care about 'added' in 'conflicts' field?
+            self.db_article_collection.update_many({'conflicts':
+                                                        {'$elemMatch':
+                                                            {'inKnowledgeGraph': {
+                                                                'subject': triple['subject'],
+                                                                'relation': triple['relation'],
+                                                                'objects': triple['objects']}
+                                                            }
+                                                        }
+                                                    },
+                                                   {'$set': {'conflicts.$': None}})
+            self.db_article_collection.update_many({}, {'$pull': {'conflicts': None}})
             self.db_triples_collection.update_one({'subject': triple['subject'],
                                                    'relation': triple['relation'],
                                                    'objects': triple['objects']},
@@ -276,11 +287,27 @@ class KnowledgeGraphUpdater:
                                                'objects': triple['objects']},
                                               {'$set': {'added': True}})
 
-    # TODO: delete knowledge
+    def get_knowledge(self, subject, relation, objects=None):
+        """
+        Returns triple from the knowledge graph that has the given conditions.
+        If objects are given, it will return back the triple if it exist in the knowledge graph.
+        :param subject:
+        :param relation:
+        :param objects: optional
+        :return: list of triples
+        :rtype: list
+        """
+        if objects is None:
+            return [triple.to_dict() for triple in self.knowledge_graph.get_triples(subject, relation)]
+        if type(objects) is str:
+            objects = [objects]
+        triple = Triple(subject, relation, objects)
+        if self.knowledge_graph.check_triple_object_existence(triple):
+            return [triple.to_dict()]
 
-    # TODO: get entity
+    # TODO: get entity need fix
     def get_entity(self, subject):
-        return self.knowledge_graph.get_entity('http://dbpedia.org/resource/' + subject)
+        return self.knowledge_graph.get_entity(subject)
 
 
 if __name__ == '__main__':

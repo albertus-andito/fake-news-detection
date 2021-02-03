@@ -1,4 +1,9 @@
+import logging
+import os
+
 from flask import Blueprint, request
+
+from definitions import ROOT_DIR, LOGGER_CONFIG_PATH
 from kgupdater import KnowledgeGraphUpdater
 import threading
 
@@ -6,6 +11,12 @@ kgu = KnowledgeGraphUpdater()
 
 kgu_api = Blueprint('kgu_api', __name__)
 
+
+LOGFILE_PATH = os.path.join(ROOT_DIR, 'logs', 'kgu-routes.log').replace("\\", "/")
+logging.config.fileConfig(LOGGER_CONFIG_PATH,
+                          defaults={'logfilename': LOGFILE_PATH},
+                          disable_existing_loggers=False)
+logger = logging.getLogger()
 
 @kgu_api.route('/')
 def hello_world():
@@ -79,7 +90,6 @@ def trigger_updates():
             auto_update = False
         else:
             auto_update = None
-        print(auto_update)
         async_task = AsyncUpdate(kgu, kg_auto_update=auto_update)
         async_task.start()
         return {'message': 'Request submitted. Update is processing...'}, 202
@@ -102,7 +112,7 @@ def insert_article_triples():
           id: article_triples_array
           type: array
           items:
-            $ref: '#/definitions/triples'
+            $ref: '#/definitions/article_triples'
         required: true
     responses:
       200:
@@ -248,13 +258,12 @@ def pending_triples_from_article(source):
       200:
         description: Pending triples of the article returned successfully
         schema:
-          $ref: '#/definitions/triples'
+          $ref: '#/definitions/article_triples'
       404:
         description: No pending triples for the specified article are not found.
         schema:
           id: article_url_with_message
     """
-    # TODO
     pending = kgu.get_article_pending_knowledge(source)
     if pending is None:
         return {'source': source, 'message': 'No pending triples (to be added to the knowledge graph) found for '
@@ -279,7 +288,7 @@ def pending_triples_from_articles():
             all_pending:
               type: array
               items:
-                $ref: '#/definitions/triples'
+                $ref: '#/definitions/article_triples'
     """
     return {'all_pending': kgu.get_all_pending_knowledge()}, 200
 
@@ -292,7 +301,7 @@ def triples_from_article(source):
     tags:
       - Knowledge Graph Updater (Articles)
     definitions:
-      triples:
+      article_triples:
         properties:
           source:
             type: string
@@ -323,7 +332,7 @@ def triples_from_article(source):
       200:
         description: Triples of the article returned successfully
         schema:
-          $ref: '#/definitions/triples'
+          $ref: '#/definitions/article_triples'
       404:
         description: Triples for the specified article are not found.
         schema:
@@ -352,14 +361,45 @@ def triples_from_articles():
             all_triples:
               type: array
               items:
-                $ref: '#/definitions/triples'
+                $ref: '#/definitions/article_triples'
         """
     # TODO: add pagination
     return {'all_triples': kgu.get_all_articles_knowledge()}, 200
 
 
-@kgu_api.route('/triples/confirm/', methods=['POST'])
+@kgu_api.route('/triples/force/', methods=['POST'])
 def force_insert_triples():
+    """
+    Insert triples to the knowledge graph, even if there are conflicts.
+    ---
+    tags:
+      - Knowledge Graph Updater
+    consumes:
+      - application/json
+    parameters:
+      - in: body
+        name: triples_array
+        schema:
+          id: triples_array
+          type: array
+          items:
+            type: object
+            properties:
+              subject:
+                type: string
+              relation:
+                type: string
+              objects:
+                type: array
+                items:
+                  type: string
+        required: true
+    responses:
+      200:
+        description: Triples were inserted successfully.
+        schema:
+          id: standard_message
+    """
     data = request.get_json()
     if type(data) is list:
         for triple in data:
@@ -369,25 +409,177 @@ def force_insert_triples():
     return {'message': 'All triples inserted.'}, 200
 
 
+@kgu_api.route('/triples/')
+def get_triples():
+    """
+    Returns triples that satisfy the specified conditions (subject, relation, or objects)
+    ---
+    tags:
+      - Knowledge Graph Updater
+    parameters:
+      - name: subject
+        in: query
+        type: string
+        required: true
+      - name: relation
+        in: query
+        type: string
+        required: true#
+      - name: objects
+        in: query
+        type: array
+        collectionFormat: multi
+        items:
+          type: string
+        required: false
+    responses:
+      200:
+        description: Triples in the knowledge graph that are related to the given subject and relation (and objects, if given)
+        schema:
+          id: triples
+          properties:
+            triples:
+              type: array
+              items:
+                type: object
+                properties:
+                  subject:
+                    type: string
+                  relation:
+                    type: string
+                  objects:
+                    type: array
+                    items:
+                      type: string
+      404:
+        description: No triples found in the knowledge graph with the given properties.
+        schema:
+          id: standard_message
+    """
+    subject = request.args.get('subject')
+    relation = request.args.get('relation')
+    objects = request.args.getlist('objects')
+    triples = kgu.get_knowledge(subject, relation, objects)
+    if triples is None or len(triples) == 0:
+        return {'message': 'No triple found for the given properties in the knowledge graph.'}, 404
+    return {'triples': triples}, 200
+
+
 @kgu_api.route('/triples/', methods=['POST'])
 def insert_triples():
+    """
+    Insert triples to knowledge graph. If a triple has conflicts, it will return the conflicts and not insert the triple.
+    ---
+    tags:
+      - Knowledge Graph Updater
+    consumes:
+      - application/json
+    parameters:
+      - in: body
+        name: triples_array
+        schema:
+          id: triples_array
+          type: array
+          items:
+            type: object
+            properties:
+              subject:
+                type: string
+              relation:
+                type: string
+              objects:
+                type: array
+                items:
+                  type: string
+        required: true
+    responses:
+      200:
+        description: Triples were inserted successfully.
+        schema:
+          id: standard_message
+      409:
+        description: There are some conflicting triples.
+        schema:
+          id: conflicts_with_message
+          type: object
+          properties:
+            message:
+              type: string
+            conflicts:
+              type: array
+              description: array of conflicted triples in the knowledge graph
+              items:
+                type: object
+                properties:
+                  toBeInserted:
+                    type: object
+                    properties:
+                      subject:
+                        type: string
+                      relation:
+                        type: string
+                      objects:
+                        type: array
+                        items:
+                          type: string
+                  inKnowledgeGraph:
+                    type: object
+                    properties:
+                      subject:
+                        type: string
+                      relation:
+                        type: string
+                      objects:
+                        type: array
+                        items:
+                          type: string
+    """
     data = request.get_json()
-    conflicts = []
-    if type(data) is list:
-        conflicts = [conflict for conflict in (kgu.insert_knowledge(triple, check_conflict=True) for triple in data)
-                     if conflict is not None]
-    else:
-        conflict = kgu.insert_knowledge(data, check_conflict=True)
-        if conflict is not None:
-            conflicts = [conflict]
-    if len(conflicts) > 0:
-        conflicts = [[triple.to_dict() for triple in conflict] for conflict in conflicts]
-        return {'message': 'There are some conflicts in the triple', 'conflicts': conflicts}, 409
+    # Pair up the conflicts
+    conflicts_list = [kgu.insert_knowledge(triple, check_conflict=True) for triple in data]
+    conflicts_pairs = [(conflicts, to_be_inserted) for (conflicts, to_be_inserted) in zip(conflicts_list, data) if conflicts is not None]
+    conflicts_pairs = [(conflict, to_be_inserted) for (conflicts, to_be_inserted) in conflicts_pairs for conflict in conflicts]
+    if len(conflicts_pairs) > 0:
+        conflicts_list = list()
+        for (conflict, to_be_inserted) in conflicts_pairs:
+            conflicts_list.append({'toBeInserted': to_be_inserted, 'inKnowledgeGraph': conflict.to_dict()})
+        return {'message': 'There are some conflicts in the triple', 'conflicts': conflicts_list}, 409
     return {'message': 'All triples inserted.'}, 200
 
 
 @kgu_api.route('/triples/', methods=['DELETE'])
 def delete_triples():
+    """
+    Delete triples from knowledge graph.
+    ---
+    tags:
+      - Knowledge Graph Updater
+    consumes:
+      - application/json
+    parameters:
+      - in: body
+        name: triples_array
+        schema:
+          id: triples_array
+          type: array
+          items:
+            type: object
+            properties:
+              subject:
+                type: string
+              relation:
+                type: string
+              objects:
+                type: array
+                items:
+                  type: string
+        required: true
+    responses:
+      200:
+        description: Triples were deleted successfully.
+        schema:
+          id: standard_message
+    """
     data = request.get_json()
     if type(data) is list:
         kgu.delete_knowledge(data)
@@ -396,8 +588,32 @@ def delete_triples():
     return {'message': 'Triples deleted.'}, 200
 
 
-@kgu_api.route('/entity/<subject>')
+@kgu_api.route('/entity/<path:subject>')
 def get_entity(subject):
+    """
+    Returns all triples that has the subject parameter as the subject.
+    ---
+    tags:
+      - Knowledge Graph Updater
+    parameters:
+      - name: subject
+        in: path
+        description: subject/entity name (should be in DBpedia format)
+        type: string
+        required: true
+    responses:
+      200:
+        description: Triples related to entity/subject returned.
+        schema:
+          id: triples
+      404:
+        description: No triples found that are related to the entity/subject
+        schema:
+          id: standard_message
+    """
+    triples = kgu.get_entity(subject)
+    if triples is None:
+        return {'message': 'No triples found that are related to ' + subject}, 404
     triples = [triple.to_dict() for triple in kgu.get_entity(subject)]
     return {'triples': triples}, 200
 
@@ -418,5 +634,8 @@ class AsyncUpdate(threading.Thread):
     def run(self):
         global updating
         updating = True
-        kgu.update_missed_knowledge(kg_auto_update=self.kg_auto_update)
+        try:
+            kgu.update_missed_knowledge(kg_auto_update=self.kg_auto_update)
+        except Exception as e:
+            logger.error(e)
         updating = False

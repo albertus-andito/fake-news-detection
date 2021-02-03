@@ -96,6 +96,8 @@ class KnowledgeGraphWrapper:
         :return: list of all triples that the subject has in the knowledge graph, or None if the subject doesn't exist
         :rtype: list or None
         """
+        if not subject.startswith("http://dbpedia.org/resource"):
+            subject = "http://dbpedia.org/resource/" + subject
         query = """
                 PREFIX : <http://dbpedia.org/resource/>
                 SELECT ?r ?o WHERE{{
@@ -222,6 +224,9 @@ if __name__ == '__main__':
     # wrapper.insert_triple("http://dbpedia.org/resource/Mr_Giuliani", "http://dbpedia.org/ontology/ignore", "http://dbpedia.org/resource/Social_norms")
 
     triples = wrapper.get_entity("http://dbpedia.org/resource/Mr_Giuliani")
+    print(triples)
+
+    triples = wrapper.get_entity("Mr_Giuliani")
     print(triples)
 
     # wrapper.delete_triple("http://dbpedia.org/resource/Mr_Giuliani", "http://dbpedia.org/ontology/repeat", "unsubstantiated claims")

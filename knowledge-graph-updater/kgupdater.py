@@ -1,7 +1,6 @@
 import logging
 import logging.config
 import os
-import pprint
 from dotenv import load_dotenv
 from pathlib import Path
 from pymongo import MongoClient

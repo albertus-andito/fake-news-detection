@@ -1,0 +1,9 @@
+.site-layout-content {
+  min-height: 280px;
+  padding: 24px;
+  background: #fff;
+}
+
+[data-theme="dark"] .site-layout-content {
+    background: #141414;
+  }

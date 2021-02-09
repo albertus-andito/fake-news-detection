@@ -2,19 +2,22 @@ import { Layout, Menu } from 'antd';
 import { SecurityScanFilled } from '@ant-design/icons';
 import { Outlet } from 'react-router';
 import {Link} from "react-router-dom";
-
 const { Header, Content, Footer } = Layout;
 
 function AppLayout() {
     return (
         <Layout>
-            <Header className='header' >
-                <Link to='/'>
-                    <SecurityScanFilled style={{ color: '#ffffff', fontSize: '38px', margin: '10px 20px 0 0', float: 'left'}} />
-                </Link>
-                <Menu theme='dark' mode='horizontal' >
-                    <Menu.Item key='/fact-checker'>Fact Checker<Link to='/fact-checker'></Link></Menu.Item>
-                    <Menu.Item>Knowledge Graph Updater</Menu.Item>
+            <Header className='header'>
+
+                <Menu theme='dark' mode='horizontal'>
+                    <Menu.Item key='/' className='customclass'>
+                        <Link to='/'>
+                            <SecurityScanFilled style={{ color: '#ffffff', fontSize: '38px'}} />
+                        </Link>
+
+                    </Menu.Item>
+                    <Menu.Item key='/fact-checker' className='customclass'>Fact Checker<Link to='/fact-checker'></Link></Menu.Item>
+                    <Menu.Item className='customclass'>Knowledge Graph Updater</Menu.Item>
                 </Menu>
             </Header>
             <Content style={{
@@ -27,7 +30,7 @@ function AppLayout() {
                     <Outlet />
                 </div>
             </Content>
-            <Footer style={{ textAlign: 'center', backgroundColor: '#111d2c', color: '#bfbfbf'}}>
+            <Footer style={{ textAlign: 'center', color: '#bfbfbf'}}>
                 Albertus Andito - University of Sussex - 2021
             </Footer>
         </Layout>

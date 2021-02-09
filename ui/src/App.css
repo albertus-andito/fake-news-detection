@@ -1,4 +1,4 @@
-@import '~antd/dist/antd.css';
+@import './style/custom-antd.css';
 
 .App {
   text-align: center;

@@ -10,14 +10,14 @@ function AppLayout() {
             <Header className='header'>
 
                 <Menu theme='dark' mode='horizontal'>
-                    <Menu.Item key='/' className='customclass'>
+                    <Menu.Item key='/'>
                         <Link to='/'>
                             <SecurityScanFilled style={{ color: '#ffffff', fontSize: '38px'}} />
                         </Link>
 
                     </Menu.Item>
-                    <Menu.Item key='/fact-checker' className='customclass'>Fact Checker<Link to='/fact-checker'></Link></Menu.Item>
-                    <Menu.Item className='customclass'>Knowledge Graph Updater</Menu.Item>
+                    <Menu.Item key='/fact-checker'>Fact Checker<Link to='/fact-checker'></Link></Menu.Item>
+                    <Menu.Item key='/knowledge-graph-updater'>Knowledge Graph Updater<Link to='/knowledge-graph-updater'></Link></Menu.Item>
                 </Menu>
             </Header>
             <Content style={{

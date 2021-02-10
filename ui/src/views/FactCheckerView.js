@@ -4,6 +4,8 @@ import axios from 'axios';
 import { CheckCircleOutlined } from '@ant-design/icons';
 import TriplesFormInput from '../components/TriplesFormInput';
 
+import { convertToDBpediaLink, convertObjectsToDBpediaLink } from '../utils';
+
 const { TextArea } = Input;
 
 function ArticleTextForm({loading, setLoading, setResult}) {
@@ -22,24 +24,24 @@ function ArticleTextForm({loading, setLoading, setResult}) {
 
     return(
          <Form layout='vertical' onFinish={onSubmit} requiredMark={false} style={{ margin: '24px 0 0 0'}}>
-                <Form.Item
-                    label='Article Text'
-                    name='text'
-                    rules={[
-                        {
-                            required: true,
-                            message: 'Please input the fake news text!',
-                        }
-                    ]}
-                >
-                    <TextArea rows={4} disabled={loading}/>
-                </Form.Item>
-                <Form.Item>
-                    <Button type='primary' htmlType='submit' disabled={loading} style={{ width: '100%'}}>
-                        Fact Check
-                    </Button>
-                </Form.Item>
-            </Form>
+            <Form.Item
+                label='Article Text'
+                name='text'
+                rules={[
+                    {
+                        required: true,
+                        message: 'Please input the fake news text!',
+                    }
+                ]}
+            >
+                <TextArea rows={4} disabled={loading}/>
+            </Form.Item>
+            <Form.Item>
+                <Button type='primary' htmlType='submit' disabled={loading} style={{ width: '100%'}}>
+                    Fact Check
+                </Button>
+            </Form.Item>
+         </Form>
     );
 }
 
@@ -47,15 +49,20 @@ function TriplesForm({loading, setLoading, setResult}) {
     const onSubmit = (values) => {
         setLoading(true);
         console.log('Submitted', values);
-        values.triples.forEach(value => {
-            value.objects = [value.objects]
-        })
-        axios.post('/fc/simple/fact-check/triples/', values.triples)
-        .then(function (response) {
-            console.log(response);
+        if (!values.triples || values.triples.length == 0) {
             setLoading(false);
-            setResult(response);
-        })
+        } else {
+            values.triples.forEach(value => {
+                value.objects = [value.objects]
+            });
+            axios.post('/fc/simple/fact-check/triples/', values.triples)
+            .then(function (response) {
+                console.log(response);
+                setLoading(false);
+                setResult(response);
+            });
+        }
+
     }
 
     return(
@@ -71,30 +78,13 @@ function TriplesForm({loading, setLoading, setResult}) {
 }
 
 function FactCheckerView() {
-    let [loading, setLoading] = useState(false);
-    let [result, setResult] = useState();
-    let [inputType, setInputType] = useState('text');
+    const [loading, setLoading] = useState(false);
+    const [result, setResult] = useState();
+    const [inputType, setInputType] = useState('text');
 
     const onInputTypeChange = (e) => {
         setInputType(e.target.value);
     }
-
-    const convertToDBpediaLink = (text) => {
-        if (text.startsWith('http://dbpedia.org/')){
-            return (
-                <a href={text.replace('http://dbpedia.org/', 'http://localhost:8890/')}>
-                    {text.substring(text.lastIndexOf('/') + 1)}
-                </a>
-            );
-        }
-        return text;
-    }
-
-    const convertObjectsToDBpediaLink = (objects) => {
-        const elements = [];
-        objects.forEach(o => elements.push(convertToDBpediaLink(o)));
-        return elements;
-    };
 
     const options = [
         { label: 'Text', value: 'text'},

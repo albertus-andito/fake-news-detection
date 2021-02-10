@@ -9,7 +9,7 @@ class SimpleFactChecker(FactChecker):
 
     def fact_check_triples(self, triples):
         fc_result = {triple: self.knowledge_graph.check_triple_object_existence(triple) for triple in triples}
-        truthfulness = sum(fc_result.values()) / len(fc_result)
+        truthfulness = sum(fc_result.values()) / len(fc_result) if len(fc_result) > 0 else 0
         # what to return here?
         return fc_result, truthfulness
 

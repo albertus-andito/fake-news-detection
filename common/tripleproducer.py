@@ -248,20 +248,20 @@ class TripleProducer:
             self.logger.error(e.msg)
             response = None
 
-        resources = response['Resources'] if 'Resources' in response else None
-
-        if resources is not None:
-            for triple in all_triples:
-                for resource in resources:
-                    if triple.subject in resource['@surfaceForm']:
-                        triple.subject = resource['@URI']
-                    objs = []
-                    for obj in triple.objects:
-                        if obj in resource['@surfaceForm']:
-                            objs.append(resource['@URI'])
-                        else:
-                            objs.append(obj)
-                    triple.objects = objs
+        if response is not None:
+            resources = response['Resources'] if 'Resources' in response else None
+            if resources is not None:
+                for triple in all_triples:
+                    for resource in resources:
+                        if triple.subject in resource['@surfaceForm']:
+                            triple.subject = resource['@URI']
+                        objs = []
+                        for obj in triple.objects:
+                            if obj in resource['@surfaceForm']:
+                                objs.append(resource['@URI'])
+                            else:
+                                objs.append(obj)
+                        triple.objects = objs
 
         return all_triples
 

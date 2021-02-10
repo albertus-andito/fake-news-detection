@@ -1,6 +1,10 @@
+import logging
+import os
 from json import JSONDecodeError
 from nltk.tokenize import sent_tokenize, word_tokenize
 from spacy.matcher import Matcher
+
+from definitions import ROOT_DIR, LOGGER_CONFIG_PATH
 from triple import Triple
 from tripleextractors import StanfordExtractor, IITExtractor
 import json
@@ -43,6 +47,12 @@ class TripleProducer:
 
         self.nlp = spacy.load('en')
         neuralcoref.add_to_pipe(self.nlp)
+
+        LOGFILE_PATH = os.path.join(ROOT_DIR, 'logs', 'triple-producer.log').replace("\\", "/")
+        logging.config.fileConfig(LOGGER_CONFIG_PATH,
+                                  defaults={'logfilename': LOGFILE_PATH},
+                                  disable_existing_loggers=False)
+        self.logger = logging.getLogger()
 
     def produce_triples(self, document):
         """
@@ -127,7 +137,7 @@ class TripleProducer:
             try:
                 triples.update(self.extractor.extract(sentence))
             except JSONDecodeError as e:
-                print(e.msg)
+                self.logger.error(e.msg)
         # TODO: The triples are currently stored in a flat list. Should we change it to list of lists (separated by sentences)?
         return triples
 
@@ -227,12 +237,15 @@ class TripleProducer:
         """
         # Do we need to split the sentences first or not? May help with context if not?
         # sentences = sent_tokenize(document)
-        try:
-            response = requests.get(self.SPOTLIGHT_URL,
+        response = requests.get(self.SPOTLIGHT_URL,
                                     params={'text': document},
-                                    headers={'Accept': 'application/json'}).json()
+                                    headers={'Accept': 'application/json'})
+        if response.status_code != 200:
+            self.logger.error(response.text)
+        try:
+            response = response.json()
         except json.decoder.JSONDecodeError as e:
-            print(e.msg)
+            self.logger.error(e.msg)
             response = None
 
         resources = response['Resources'] if 'Resources' in response else None

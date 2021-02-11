@@ -57,17 +57,25 @@ class KnowledgeGraphUpdater:
             # set 'added' to False for all triples initially
             triples = [{**triple.to_dict(), **{'added': False}} for triple in
                        self.triple_producer.produce_triples(' '.join(article['texts']))]
-            self.db_article_collection.update_one({'source': article['source']}, {'$set': {'triples': triples}})
 
-            # check for conflict
             conflicted_triples = []
             for triple in triples:
-                conflicts = self.knowledge_graph.get_triples(triple['subject'], triple['relation'])
-                if conflicts is not None:
-                    del triple['added']
-                    for conflict in conflicts:
-                        conflicted_triples.append({'toBeInserted': triple, 'inKnowledgeGraph': conflict.to_dict()})
+                exists = self.knowledge_graph.check_triple_object_existence(Triple.from_dict(triple))
+                # The exact triple already exists in the KG. Mark as added.
+                if exists is True:
+                    triple['added'] = True
+                # check for conflict
+                else:
+                    conflicts = self.knowledge_graph.get_triples(triple['subject'], triple['relation'])
+                    if conflicts is not None:
+                        a_triple = triple.copy()
+                        del a_triple['added']
+                        for conflict in conflicts:
+                            conflicted_triples.append({'toBeInserted': a_triple, 'inKnowledgeGraph': conflict.to_dict()})
+
             self.logger.debug('Found conflicts for article %s: %s', article['source'], conflicted_triples)
+
+            self.db_article_collection.update_one({'source': article['source']}, {'$set': {'triples': triples}})
 
             if len(conflicted_triples) > 0:  # save conflicts
                 self.db_article_collection.update_one({'source': article['source']},
@@ -239,6 +247,7 @@ class KnowledgeGraphUpdater:
             stored_triples = self.db_article_collection.find_one({'source': article['source']})['triples']
             for triple in article['triples']:
                 # FIXME: check for conflict? probably no need to
+                print(triple)
                 self.knowledge_graph.insert_triple_object(Triple.from_dict(triple))
                 if triple in stored_triples:
                     self.db_article_collection.update_many({'source': article['source'],

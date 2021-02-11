@@ -2,9 +2,37 @@ import {Button, Card, Divider, Modal, Table, Tag, Typography} from "antd";
 import React, { useState, useEffect } from 'react';
 import axios from "axios";
 import {convertObjectsToDBpediaLink, convertToDBpediaLink} from "../utils";
+import {ExclamationCircleOutlined} from "@ant-design/icons";
 
-function ConflictModal() {
+const { confirm } = Modal;
+
+const tripleColumns = [
+        {
+            title: 'Subject',
+            dataIndex: 'subject',
+            key: 'subject',
+            render: convertToDBpediaLink,
+        },
+        {
+            title: 'Relation',
+            dataIndex: 'relation',
+            key: 'relation',
+            render: convertToDBpediaLink,
+        },
+        {
+            title: 'Object',
+            dataIndex: 'objects',
+            key: 'object',
+            render: convertObjectsToDBpediaLink,
+        },
+    ];
+
+function ConflictModal({ conflict }) {
     const [isModalVisible, setIsModalVisible] = useState(false);
+
+    const inKnowledgeGraphConflicts = conflict.map((c) => {
+        return c.inKnowledgeGraph;
+    })
 
     const showModal = () => {
         setIsModalVisible(true);
@@ -18,67 +46,71 @@ function ConflictModal() {
         setIsModalVisible(false);
     };
 
-    return(
+    return (
         <>
-            <Button type='primary' onClick={showModal} style={{ 'backgroundColor': 'red' }}>
+            <Button type='primary' onClick={showModal} style={{'backgroundColor': 'red'}}>
                 Yes. See Conflict.
             </Button>
             <Modal title='Conflict' visible={isModalVisible} onOk={handleOk} onCancel={handleCancel}>
-                This is a conflict
+                <Typography.Title level={5}>Triples in Knowledge Graph</Typography.Title>
+                <Table dataSource={inKnowledgeGraphConflicts} columns={tripleColumns}
+                       pagination={{hideOnSinglePage: true}}/>
             </Modal>
         </>
-    )
-}
+    );
+};
 
-function KnowledgeGraphUpdaterView() {
-    const [pendingTriples, setPendingTriples] = useState();
-    const [conflictedTriples, setConflictedTriples] = useState();
-    const [isUpdating, setIsUpdating] = useState(false);
+function PendingTriplesTable({ pendingTriples, conflictedTriples, getPendingTriples }) {
+    const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+    const hasSelected = selectedRowKeys.length > 0;
 
-    const getPendingTriples = () => {
-        axios.get('/kgu/article-triples/pending')
-        .then(function (response) {
-            console.log(response);
-            let data = [];
-            response.data.all_pending.forEach((row) => {
-                row.triples.forEach((triple) => {
-                    data.push({...triple, source: row.source})
-                })
-            })
-            setPendingTriples(data);
+    const onSelectChange = (selectedRowKeys) => {
+        console.log("selectedRowKeys changed: ", selectedRowKeys);
+        setSelectedRowKeys(selectedRowKeys);
+    }
+
+    const rowSelection = {
+        selectedRowKeys: selectedRowKeys,
+        onChange: onSelectChange,
+    }
+
+    // TODO: move this to util components
+    const showErrorModal = (message) => {
+        Modal.error({
+            title: 'Error!',
+            content: (
+                <div>
+                    {message}
+                </div>
+            ),
+            onOk() {
+                Modal.destroyAll();
+            }
         });
-    };
+    }
 
-    const getConflictedTriples = () => {
-        axios.get('/kgu/article-triples/conflicts/')
-        .then(function (response) {
-            console.log(response);
-            setConflictedTriples(response.data.all_conflicts);
+    const showAddModal = () => {
+        const triplesToAdd = pendingTriples.filter((triple) => selectedRowKeys.includes(triple.key));
+        triplesToAdd.forEach((triple) => {
+            triple.triples = [{subject: triple.subject, relation: triple.relation, objects: triple.objects, added: triple.added}];
+        })
+        confirm({
+            title: 'Do you want to add these triples to the knowledge graph?',
+            icon: <ExclamationCircleOutlined />,
+            content: <Table dataSource={triplesToAdd} columns={tripleColumns} pagination={{hideOnSinglePage: true}} />,
+            onOk() {
+                console.log(triplesToAdd)
+                return axios.post('/kgu/article-triples/insert/', triplesToAdd)
+                            .then(function (response) {
+                                getPendingTriples();
+                            })
+                            .catch(function (error) {
+                                showErrorModal(error.response); //FIXME
+                            })
+            }
         });
-    };
+    }
 
-    const onUpdateClick = () => {
-        axios.get('/kgu/updates')
-        .then(function() {
-            setIsUpdating(true);
-        });
-        let status = setInterval(function() {
-            axios.get('/kgu/updates/status')
-            .then(function(response) {
-                if (response.status == 200) {
-                    setIsUpdating(false);
-                    getPendingTriples();
-                    getConflictedTriples();
-                    return clearInterval(status)
-                }
-            })
-        }, 3000);
-    };
-
-    useEffect(() => {
-        getPendingTriples();
-        getConflictedTriples();
-    }, []);
 
     const columns = [
         {
@@ -119,10 +151,89 @@ function KnowledgeGraphUpdaterView() {
                         && el.toBeInserted.relation === row.relation
                         // && el.toBeInserted.objects === row.objects;
                 });
-                return conflict.length > 0 ? <ConflictModal /> : 'No';
+                return conflict.length > 0 ? <ConflictModal conflict={conflict}/> : 'No';
             }
         }
     ];
+
+    return (
+        <>
+            <Button
+                type='primary'
+                disabled={!hasSelected}
+                onClick={showAddModal}
+                style={{ float: 'left', margin: '10px 0 10px 10px' }}
+            >
+                Add to Knowledge Graph
+            </Button>
+            <Button
+                type='primary'
+                disabled={!hasSelected}
+                style={{ float: 'left', margin: '10px 0 10px 10px' }}
+            >
+                Discard triples
+            </Button>
+            <Table
+                dataSource={pendingTriples}
+                columns={columns}
+                rowSelection={rowSelection}
+                scroll={{x: true}}
+            />
+        </>
+    );
+;}
+
+function KnowledgeGraphUpdaterView() {
+    const [pendingTriples, setPendingTriples] = useState();
+    const [conflictedTriples, setConflictedTriples] = useState();
+    const [isUpdating, setIsUpdating] = useState(false);
+
+
+
+    const getPendingTriples = () => {
+        axios.get('/kgu/article-triples/pending')
+        .then(function (response) {
+            console.log(response);
+            let data = [];
+            response.data.all_pending.forEach((row) => {
+                row.triples.forEach((triple) => {
+                    data.push({...triple, source: row.source, key: triple['subject']+triple['relation']+triple['objects']})
+                })
+            })
+            setPendingTriples(data);
+        });
+    };
+
+    const getConflictedTriples = () => {
+        axios.get('/kgu/article-triples/conflicts/')
+        .then(function (response) {
+            console.log(response);
+            setConflictedTriples(response.data.all_conflicts);
+        });
+    };
+
+    const onUpdateClick = () => {
+        axios.get('/kgu/updates')
+        .then(function() {
+            setIsUpdating(true);
+        });
+        let status = setInterval(function() {
+            axios.get('/kgu/updates/status')
+            .then(function(response) {
+                if (response.status == 200) {
+                    setIsUpdating(false);
+                    getPendingTriples();
+                    getConflictedTriples();
+                    return clearInterval(status)
+                }
+            })
+        }, 3000);
+    };
+
+    useEffect(() => {
+        getPendingTriples();
+        getConflictedTriples();
+    }, []);
 
     return(
         <Card style={{ textAlign: 'center'}}>
@@ -144,9 +255,12 @@ function KnowledgeGraphUpdaterView() {
             <Typography style={{ textAlign: 'center' }}>
                 Triples to be added to the knowledge graph.
             </Typography>
-            <Table dataSource={pendingTriples} columns={columns} scroll={{x: true}}>
 
-            </Table>
+            <PendingTriplesTable
+                pendingTriples={pendingTriples}
+                conflictedTriples={conflictedTriples}
+                getPendingTriples={getPendingTriples}
+            />
 
 
         </Card>

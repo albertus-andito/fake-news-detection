@@ -7,25 +7,25 @@ import {ExclamationCircleOutlined} from "@ant-design/icons";
 const { confirm } = Modal;
 
 const tripleColumns = [
-        {
-            title: 'Subject',
-            dataIndex: 'subject',
-            key: 'subject',
-            render: convertToDBpediaLink,
-        },
-        {
-            title: 'Relation',
-            dataIndex: 'relation',
-            key: 'relation',
-            render: convertToDBpediaLink,
-        },
-        {
-            title: 'Object',
-            dataIndex: 'objects',
-            key: 'object',
-            render: convertObjectsToDBpediaLink,
-        },
-    ];
+    {
+        title: 'Subject',
+        dataIndex: 'subject',
+        key: 'subject',
+        render: convertToDBpediaLink,
+    },
+    {
+        title: 'Relation',
+        dataIndex: 'relation',
+        key: 'relation',
+        render: convertToDBpediaLink,
+    },
+    {
+        title: 'Object',
+        dataIndex: 'objects',
+        key: 'object',
+        render: convertObjectsToDBpediaLink,
+    },
+];
 
 function ConflictModal({ conflict }) {
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -58,14 +58,14 @@ function ConflictModal({ conflict }) {
             </Modal>
         </>
     );
-};
+}
 
 function PendingTriplesTable({ pendingTriples, conflictedTriples, getPendingTriples }) {
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
     const hasSelected = selectedRowKeys.length > 0;
 
     const onSelectChange = (selectedRowKeys) => {
-        console.log("selectedRowKeys changed: ", selectedRowKeys);
+        // console.log("selectedRowKeys changed: ", selectedRowKeys);
         setSelectedRowKeys(selectedRowKeys);
     }
 
@@ -97,7 +97,7 @@ function PendingTriplesTable({ pendingTriples, conflictedTriples, getPendingTrip
         confirm({
             title: 'Do you want to add these triples to the knowledge graph?',
             icon: <ExclamationCircleOutlined />,
-            content: <Table dataSource={triplesToAdd} columns={tripleColumns} pagination={{hideOnSinglePage: true}} />,
+            content: <Table dataSource={triplesToAdd} columns={tripleColumns} pagination={{hideOnSinglePage: true}} scroll={{x: true}} />,
             onOk() {
                 console.log(triplesToAdd)
                 return axios.post('/kgu/article-triples/insert/', triplesToAdd)
@@ -106,7 +106,32 @@ function PendingTriplesTable({ pendingTriples, conflictedTriples, getPendingTrip
                             })
                             .catch(function (error) {
                                 showErrorModal(error.response); //FIXME
+                            });
+            }
+        });
+    }
+
+    const showDiscardModal = () => {
+        const triplesToDelete = pendingTriples.filter((triple) => selectedRowKeys.includes(triple.key));
+        triplesToDelete.forEach((triple) => {
+            triple.triples = [{subject: triple.subject, relation: triple.relation, objects: triple.objects, added: triple.added}];
+        })
+        confirm({
+            title: 'Are you sure you want to delete these triples?',
+            icon: <ExclamationCircleOutlined />,
+            content: <Table dataSource={triplesToDelete} columns={tripleColumns} pagination={{hideOnSinglePage: true}} scroll={{x: true}} />,
+            okText: 'Yes',
+            okType: 'danger',
+            cancelText: 'No',
+            onOk() {
+                console.log(triplesToDelete)
+                return axios.delete('/kgu/article-triples/pending/', { data: triplesToDelete})
+                            .then(function (response) {
+                                getPendingTriples();
                             })
+                            .catch(function (error) {
+                                showErrorModal(error.response); //FIXME
+                            });
             }
         });
     }
@@ -169,6 +194,7 @@ function PendingTriplesTable({ pendingTriples, conflictedTriples, getPendingTrip
             <Button
                 type='primary'
                 disabled={!hasSelected}
+                onClick={showDiscardModal}
                 style={{ float: 'left', margin: '10px 0 10px 10px' }}
             >
                 Discard triples

@@ -57,17 +57,26 @@ class KnowledgeGraphUpdater:
             # set 'added' to False for all triples initially
             triples = [{**triple.to_dict(), **{'added': False}} for triple in
                        self.triple_producer.produce_triples(' '.join(article['texts']))]
-            self.db_article_collection.update_one({'source': article['source']}, {'$set': {'triples': triples}})
 
-            # check for conflict
             conflicted_triples = []
             for triple in triples:
-                conflicts = self.knowledge_graph.get_triples(triple['subject'], triple['relation'])
-                if conflicts is not None:
-                    del triple['added']
-                    for conflict in conflicts:
-                        conflicted_triples.append({'toBeInserted': triple, 'inKnowledgeGraph': conflict.to_dict()})
+                exists = self.knowledge_graph.check_triple_object_existence(Triple.from_dict(triple))
+                # The exact triple already exists in the KG. Mark as added.
+                if exists is True:
+                    triple['added'] = True
+                # check for conflict
+                else:
+                    conflicts = self.knowledge_graph.get_triples(triple['subject'], triple['relation'])
+                    if conflicts is not None:
+                        a_triple = triple.copy()
+                        del a_triple['added']
+                        for conflict in conflicts:
+                            conflicted_triples.append(
+                                {'toBeInserted': a_triple, 'inKnowledgeGraph': conflict.to_dict()})
+
             self.logger.debug('Found conflicts for article %s: %s', article['source'], conflicted_triples)
+
+            self.db_article_collection.update_one({'source': article['source']}, {'$set': {'triples': triples}})
 
             if len(conflicted_triples) > 0:  # save conflicts
                 self.db_article_collection.update_one({'source': article['source']},
@@ -127,15 +136,15 @@ class KnowledgeGraphUpdater:
                                                    {'$set': {'triples.$.added': False}})
             # TODO: do we need to care about 'added' in 'conflicts' field?
             self.db_article_collection.update_many({'conflicts':
-                                                        {'$elemMatch':
-                                                            {'inKnowledgeGraph': {
-                                                                'subject': triple['subject'],
-                                                                'relation': triple['relation'],
-                                                                'objects': triple['objects']}
-                                                            }
-                                                        }
-                                                    },
-                                                   {'$set': {'conflicts.$': None}})
+                {'$elemMatch':
+                    {'inKnowledgeGraph': {
+                        'subject': triple['subject'],
+                        'relation': triple['relation'],
+                        'objects': triple['objects']}
+                    }
+                }
+            },
+                {'$set': {'conflicts.$': None}})
             self.db_article_collection.update_many({}, {'$pull': {'conflicts': None}})
             self.db_triples_collection.update_one({'subject': triple['subject'],
                                                    'relation': triple['relation'],
@@ -151,9 +160,29 @@ class KnowledgeGraphUpdater:
         :rtype: list or None
         """
         article = self.db_article_collection.find_one({'source': article_url, 'triples': {'$exists': True}})
-        if article is None:
-            return None
-        return [triple for triple in article['triples'] if triple['added'] is False]
+        if article is not None:
+            return [triple for triple in article['triples'] if triple['added'] is False]
+
+    def delete_article_pending_knowledge(self, article_url, triples):
+        """
+        Deletes pending article triples, that have been added to the knowledge graph, from the database.
+        :param article_url: URL of the article source
+        :type article_url: str
+        :param triples: list of pending triples to be deleted
+        :type triples: list
+        :return:
+        """
+        for triple in triples:
+            self.db_article_collection.update_one({'source': article_url},
+                                                  {'$pull': {'triples': triple}})
+            self.db_article_collection.update_one({'source': article_url},
+                                                  {'$pull': {'conflicts':
+                                                      {'toBeInserted': {
+                                                          'subject': triple['subject'],
+                                                          'relation': triple['relation'],
+                                                          'objects': triple['objects']}
+                                                      }
+                                                  }})
 
     def get_all_pending_knowledge(self):
         """
@@ -239,6 +268,7 @@ class KnowledgeGraphUpdater:
             stored_triples = self.db_article_collection.find_one({'source': article['source']})['triples']
             for triple in article['triples']:
                 # FIXME: check for conflict? probably no need to
+                print(triple)
                 self.knowledge_graph.insert_triple_object(Triple.from_dict(triple))
                 if triple in stored_triples:
                     self.db_article_collection.update_many({'source': article['source'],

@@ -256,6 +256,36 @@ def pending_triples_from_article(source):
     return {'source': source, 'triples': pending}
 
 
+@kgu_api.route('/article-triples/pending/', methods=['DELETE'])
+def delete_pending_triples_from_articles():
+    """
+    Delete pending article triples that have not been added to the knowledge graph.
+    ---
+    tags:
+      - Knowledge Graph Updater (Articles)
+    consumes:
+      - application/json
+    parameters:
+      - in: body
+        name: article_triples
+        schema:
+          id: article_triples_array
+          type: array
+          items:
+            $ref: '#/definitions/article_triples'
+        required: true
+    responses:
+      200:
+        description: Pending triples were deleted successfully.
+        schema:
+          id: standard_message
+    """
+    data = request.get_json()
+    for article_triple in data:
+        kgu.delete_article_pending_knowledge(article_triple['source'], article_triple['triples'])
+    return {'message': 'Pending triples deleted.'}, 200
+
+
 @kgu_api.route('/article-triples/pending/')
 def pending_triples_from_articles():
     """

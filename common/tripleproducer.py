@@ -1,7 +1,8 @@
 import logging
+import logging.config
 import os
 from json import JSONDecodeError
-from nltk.tokenize import sent_tokenize, word_tokenize
+from nltk.tokenize import word_tokenize
 from spacy.matcher import Matcher
 
 from definitions import ROOT_DIR, LOGGER_CONFIG_PATH
@@ -71,16 +72,14 @@ class TripleProducer:
         :rtype: list
         """
         spacy_doc = self.nlp(document)
+        original_sentences = list(spacy_doc.sents)
 
         # coreference resolution
         document = self.coref_resolution(spacy_doc)
+        coref_resolved_sentences = [s.text for s in self.nlp(document).sents]
 
         # extract spo triples from sentences
-        all_triples = self.extract_triples(document)
-
-        # remove stopwords from Subject and Object if scope is 'named_entities' or 'noun_phrases'
-        if self.extraction_scope != 'all':
-            all_triples = self.remove_stopwords(all_triples)
+        all_triples = self.extract_triples(coref_resolved_sentences)
 
         # filter subjects and objects according to extraction_scope
         if self.extraction_scope == 'named_entities':
@@ -89,12 +88,16 @@ class TripleProducer:
             all_triples = self.filter_in_noun_phrases(spacy_doc, all_triples)
         # TODO: combined extraction scopes of named_entities and noun_phrases?
 
+        # remove stopwords from Subject and Object if scope is 'named_entities' or 'noun_phrases'
+        if self.extraction_scope != 'all':
+            all_triples = self.remove_stopwords(all_triples)
+
         # map to dbpedia resource (dbpedia spotlight) for Named Entities
         all_triples = self.spot_entities_with_context(document, all_triples)
 
         # link relations using Falcon
-        # triples_with_linked_relations = self.link_relations(document, all_triples)
-        triples_with_linked_relations = None
+        triples_with_linked_relations = self.link_relations(coref_resolved_sentences, all_triples)
+        # triples_with_linked_relations = None
 
         # lemmatise relations
         all_triples = self.lemmatise_relations(spacy_doc, all_triples)
@@ -102,16 +105,19 @@ class TripleProducer:
         # convert relations to dbpedia format
         all_triples = self.convert_relations(all_triples)
 
-        # FIXME: currently, because falcon is commented out, the line below is not executed, so that
-        #  set is not exactly unique? because union is not performed?
+        # combine triples whose relations are manually derived with triples whose relations derived by falcon
         if triples_with_linked_relations is not None and len(triples_with_linked_relations) > 0:
-            all_triples = all_triples.union(triples_with_linked_relations)
+            all_triples = [list(set(ori_triples + falcon_triples))
+                           for ori_triples, falcon_triples in zip(all_triples, triples_with_linked_relations)]
 
-        # TODO: might still want to match subject/object to DBpedia, even if they're not really named entities?
+        # Subject needs to be a DBpedia resource/entity
         all_triples = self.convert_subjects(all_triples)
-        # TODO: extract relation???
 
-        return list(all_triples)
+        if len(original_sentences) != len(all_triples):
+            self.logger.error("Problem occurred during sentenization! Different lengths of sentences identified.")
+            raise Exception("Different length between sentences and triples")
+
+        return [*zip(original_sentences, all_triples)]
 
     def coref_resolution(self, spacy_doc):
         """
@@ -123,39 +129,36 @@ class TripleProducer:
         """
         return spacy_doc._.coref_resolved
 
-    def extract_triples(self, document):
+    def extract_triples(self, sentences):
         """
         Extract triples from document using the implementation of TripleExtractor.
-        :param document: document
-        :type document: str
-        :return: a set of raw triples
-        :rtype: set
+        :param sentences: list of document sentences
+        :type sentences: list
+        :return: a list of list of raw triples (top-level list represents sentences)
+        :rtype: list
         """
-        sentences = sent_tokenize(document)
-        triples = set()
-        for sentence in sentences:
-            try:
-                triples.update(self.extractor.extract(sentence))
-            except JSONDecodeError as e:
-                self.logger.error(e.msg)
-        # TODO: The triples are currently stored in a flat list. Should we change it to list of lists (separated by sentences)?
-        return triples
+        try:
+            triples = [self.extractor.extract(sentence) for sentence in sentences]
+            return triples
+        except JSONDecodeError as e:
+            self.logger.error(e.msg)
 
     def remove_stopwords(self, all_triples):
         """
         Remove stopwords from individual Subject and Object.
         Currently, this is only done when the extraction scope is 'named_entities' or 'noun_phrases'.
-        :param all_triples: a set of triples
-        :type all_triples: set
-        :return: a set of triples in which stopwords have been removed from the Subjects and Objects
+        :param all_triples: a list of list of triples (top-level list represent sentences)
+        :type all_triples: list
+        :return: a list of list of triples in which stopwords have been removed from the Subjects and Objects
         :rtype: list
         """
         all_stopwords = self.nlp.Defaults.stop_words
-        for triple in all_triples:
-            triple.subject = ' '.join([word for word in word_tokenize(triple.subject) if word not in all_stopwords])
-            # triple.relation = ' '.join([word for word in word_tokenize(triple['relation']) if word not in all_stopwords])
-            triple.objects = [' '.join([word for word in word_tokenize(o) if word not in all_stopwords]) for o in
-                              triple.objects]
+        for sentence in all_triples:
+            for triple in sentence:
+                triple.subject = ' '.join([word for word in word_tokenize(triple.subject) if word not in all_stopwords])
+                # triple.relation = ' '.join([word for word in word_tokenize(triple['relation']) if word not in all_stopwords])
+                triple.objects = [' '.join([word for word in word_tokenize(o) if word not in all_stopwords]) for o in
+                                  triple.objects]
         return all_triples
 
     def filter_in_named_entities(self, spacy_doc, all_triples):
@@ -163,10 +166,10 @@ class TripleProducer:
         Filter in only triples where the Subject and Object are both named entities
         :param spacy_doc: spacy document
         :type spacy_doc: spacy.tokens.Doc
-        :param all_triples: a set of triples
-        :type all_triples: set
-        :return: a set of triples in which the Subjects and Objects are all named entities
-        :rtype: set
+        :param all_triples: a list of list of triples (top-level list represents sentences)
+        :type all_triples: list
+        :return: a list of list of triples in which the Subjects and Objects are all named entities
+        :rtype: list
         """
         entities = [ent.text for ent in spacy_doc.ents]
         return self.__filter(entities, all_triples)
@@ -177,10 +180,10 @@ class TripleProducer:
         Filter in only triples where the Subject and Object are both noun phrases
         :param spacy_doc: spacy document
         :type spacy_doc: spacy.tokens.Doc
-        :param all_triples: a set of triples
-        :type all_triples: set
-        :return: a set of triples in which the Subjects and Objects are all noun phrases
-        :rtype: set
+        :param all_triples: a list of list of triples (top-level list represents sentences)
+        :type all_triples: list
+        :return: a list of list of triples in which the Subjects and Objects are all noun phrases
+        :rtype: list
         """
         noun_phrases = [chunk.text for chunk in spacy_doc.noun_chunks]
         return self.__filter(noun_phrases, all_triples)
@@ -190,19 +193,22 @@ class TripleProducer:
         Filter in only triples where the Subject and Object are in the in_list argument.
         :param in_list: list of acceptable Subjects and Objects
         :type in_list: list
-        :param all_triples: a set of triples
-        :type all_triples: set
-        :return: a set of triples in which the Subjects and Objects are all in the in_list argument
-        :rtype: set
+        :param all_triples: a list of list of triples (top-level list represents sentences)
+        :type all_triples: list
+        :return: a list of list of triples in which the Subjects and Objects are all in the in_list argument
+        :rtype: list
         """
-        filtered_triples = []
-        for triple in all_triples:
-            if triple.subject in in_list:
-                for obj in triple.objects:
-                    if obj in in_list:
-                        filtered_triples.append(triple)
-                        break
-        return filtered_triples
+        filtered_triples_sentences = []
+        for sentence in all_triples:
+            filtered_triples = []
+            for triple in sentence:
+                if any(triple.subject in word or word in triple.subject for word in in_list):
+                    for obj in triple.objects:
+                        if any(obj in word or word in obj for word in in_list):
+                            filtered_triples.append(triple)
+                            break
+            filtered_triples_sentences.append(filtered_triples)
+        return filtered_triples_sentences
 
     # def spot_entities(self, all_triples):
     #     '''
@@ -229,11 +235,11 @@ class TripleProducer:
         if they are spotted using DBpedia Spotlight API.
         :param document: document
         :type document: str
-        :param all_triples: a set of triples
-        :type all_triples: set
-        :return: a set of triples where the Subjects and Objects have been replaced with DBpedia entity resources,
+        :param all_triples: a list of list of triples (top-level list represents sentences)
+        :type all_triples: list
+        :return: a list of list of triples where the Subjects and Objects have been replaced with DBpedia entity resources,
         if possible
-        :rtype: set
+        :rtype: list
         """
         # Do we need to split the sentences first or not? May help with context if not?
         # sentences = sent_tokenize(document)
@@ -248,68 +254,83 @@ class TripleProducer:
             self.logger.error(e.msg)
             response = None
 
-        if response is not None:
-            resources = response['Resources'] if 'Resources' in response else None
-            if resources is not None:
-                for triple in all_triples:
-                    for resource in resources:
-                        if triple.subject in resource['@surfaceForm']:
-                            triple.subject = resource['@URI']
-                        objs = []
-                        for obj in triple.objects:
-                            if obj in resource['@surfaceForm']:
-                                objs.append(resource['@URI'])
-                            else:
-                                objs.append(obj)
-                        triple.objects = objs
+        if response is None:
+            return all_triples
+        resources = response['Resources'] if 'Resources' in response else None
+        if resources is None:
+            return all_triples
+
+        entities = {resource['@surfaceForm']: resource['@URI'] for resource in resources}
+        for sentence in all_triples:
+            for triple in sentence:
+                if entities.get(triple.subject):
+                    triple.subject = entities.get(triple.subject)
+                else:
+                    triple.subject = self.__find_uri(triple.subject, entities)
+                triple.objects = [entities.get(obj, self.__find_uri(obj, entities)) for obj in triple.objects]
 
         return all_triples
 
-    def link_relations(self, document, all_triples):
+    def __find_uri(self, obj, entities):
         """
-        Link relations to DBpedia Ontology using Falcon, if available.
-        :param document: document
-        :type document: str
-        :param all_triples: set of triples
-        :type all_triples: set
-        :return: new set of triples with dbpedia relations
-        :rtype set
+        Find DBpedia resource for a given subject/object where the DBpedia resource is a substring of the subject/object.
+        If such resource does not exist, return the original subject/object.
+        :param obj: subject/object
+        :type obj: str
+        :param entities: a dictionary of entities as keys and their DBpedia URI as items
+        :type entities: dict
+        :return: the DBpedia resource if exist, otherwise, return the original subject/object
+        :rtype: str
         """
-        relations = []
-        for sentence in sent_tokenize(document):
+        candidates = [uri for surfaceForm, uri in entities.items() if surfaceForm in obj]
+        if len(candidates) > 0:
+            # Only getting index [0] might be unacceptable if there are multiple candidates
+            return candidates[0]
+        return obj
+
+    def link_relations(self, sentences, all_triples):
+        """
+        Link relations to DBpedia Ontology using Falcon (https://labs.tib.eu/falcon/), if available.
+        :param sentences: list of document sentences
+        :type sentences: list
+        :param all_triples: list of list of triples (top-level list represents sentences)
+        :type all_triples: list
+        :return: new list of list of triples with dbpedia relations
+        :rtype list
+        """
+        new_triples = []
+        for sentence, triples in zip(sentences, all_triples):
+            falcon_triples = []
+            relations = []
             try:
                 response = requests.post(self.FALCON_URL,
                                      data='{"text": "%s"}' % self.__fix_encoding(sentence),
                                      headers={"Content-Type": "application/json"})
             except Exception as e:
-                print(e)
+                self.logger.error(e)
             if response.status_code != 200:
-                print(response.text)
+                self.logger.error(response.text)
             else:
                 try:
-                    relations += response.json()["relations"]
+                    relations = response.json()["relations"]
                 except json.decoder.JSONDecodeError as e:
-                    print(e.msg)
+                    self.logger.error(e.msg)
                     return None
 
-        if len(relations) > 0:
-            dbpedia_relations = [rel[0] for rel in relations]
-            raw_relations = [rel[1] for rel in relations]
-            # TODO: Change list to set
-            new_triples = set()
-            for triple in all_triples:
-                if triple.relation in raw_relations:
-                    new_triple = Triple(triple.subject, dbpedia_relations[raw_relations.index(triple.relation)],
-                                        triple.objects)
-                    new_triples.add(new_triple)
-            for i, rel in enumerate(raw_relations):
-                triple = [triple for triple in all_triples if rel in triple.relation]
-                if len(triple) > 0:
-                    new_triple = Triple(triple[0].subject, dbpedia_relations[i], triple[0].objects)
-                    new_triples.add(new_triple)
-            return new_triples
-        else:
-            return None
+            if len(relations) > 0:
+                dbpedia_relations = [rel[0] for rel in relations]
+                raw_relations = [rel[1] for rel in relations]
+                # check triples whose relation is a substring of raw_relation
+                falcon_triples = [Triple(triple.subject, dbpedia_relations[raw_relations.index(triple.relation)], triple.objects)
+                                  for triple in triples if triple.relation in raw_relations]
+                # check triples who have raw_relation as a substring of their relation
+                for i, rel in enumerate(raw_relations):
+                    existed_triples = [triple for triple in triples if rel in triple.relation]
+                    falcon_triples += [Triple(triple.subject, dbpedia_relations[i], triple.objects)
+                                       for triple in existed_triples]
+            new_triples.append(falcon_triples)
+
+        return new_triples
 
     def __fix_encoding(self, sentence):
         return sentence.replace('"', '\\"')\
@@ -323,18 +344,19 @@ class TripleProducer:
         Lemmatise relations to their based forms.
         :param spacy_doc: spacy document
         :type spacy_doc: spacy.tokens.Doc
-        :param all_triples: set of triples
-        :type all_triples: set
-        :return: set of triples where relations have been lemmatised
-        :rtype: set
+        :param all_triples: list of list of triples (top-level list represents sentences)
+        :type all_triples: list
+        :return: list of list of triples where relations have been lemmatised
+        :rtype: list
         """
         all_stopwords = self.nlp.Defaults.stop_words
-        for triple in all_triples:
-            relation = [word for word in word_tokenize(triple.relation.replace('[', '').replace(']', '')) if
-                        word not in all_stopwords]
-            triple.relation = ' '.join([self.__get_lemma(token, spacy_doc) for token in relation])
-            if not triple.relation:
-                triple.relation = "is"
+        for sentence in all_triples:
+            for triple in sentence:
+                relation = [word for word in word_tokenize(triple.relation.replace('[', '').replace(']', '')) if
+                            word not in all_stopwords]
+                triple.relation = ' '.join([self.__get_lemma(token, spacy_doc) for token in relation])
+                if not triple.relation:
+                    triple.relation = "is"
         return all_triples
 
     def __get_lemma(self, token, spacy_doc):
@@ -348,13 +370,14 @@ class TripleProducer:
     def convert_relations(self, all_triples):
         """
         Prepend all relations with "http://dbpedia.org/ontology/", even if the relation doesn't exist in DBpedia.
-        :param all_triples: set of triples
-        :type all_triples: set
-        :return: set of triples, where relations have been converted
-        :rtype: set
+        :param all_triples: list of list of triples (top-level list represents sentences)
+        :type all_triples: list
+        :return: list of list of triples, where relations have been converted
+        :rtype: list
         """
-        for triple in all_triples:
-            triple.relation = "http://dbpedia.org/ontology/" + self.__camelise(triple.relation).lstrip()
+        for sentence in all_triples:
+            for triple in sentence:
+                triple.relation = "http://dbpedia.org/ontology/" + self.__camelise(triple.relation).lstrip()
         return all_triples
 
     def __camelise(self, sentence):
@@ -375,15 +398,16 @@ class TripleProducer:
     def convert_subjects(self, all_triples):
         """
         Prepend all subjects with "http://dbpedia.org/resource/" if the subject hasn't been spotted yet as a DBpedia entity.
-        :param all_triples: set of triples
-        :type all_triples: set
-        :return: set of triples, where all subjects are dbpedia resources
-        :rtype: set
+        :param all_triples: list of list of triples (top-level list represents sentences)
+        :type all_triples: list
+        :return: list of list of triples, where all subjects are dbpedia resources
+        :rtype: list
         """
         dbpedia = "http://dbpedia.org/resource/"
-        for triple in all_triples:
-            if not triple.subject.startswith(dbpedia):
-                triple.subject = dbpedia+triple.subject.replace(" ", "_")
+        for sentence in all_triples:
+            for triple in sentence:
+                if not triple.subject.startswith(dbpedia):
+                    triple.subject = dbpedia+triple.subject.replace(" ", "_")
         return all_triples
 
 
@@ -393,8 +417,8 @@ if __name__ == "__main__":
     # stanford_producer = TripleProducer(extractor_type='stanford_openie', extraction_scope='noun_phrases')
     iit_producer = TripleProducer(extraction_scope='all')
     stanford_producer = TripleProducer(extractor_type='stanford_openie', extraction_scope='all')
-    doc_1 = "Barrack Obama was born in Hawaii. He attended school in Jakarta."
-    # doc_1 = "Barrack Obama was born in Hawaii."
+    doc_1 = "Barrack Obama was born in Hawaii. He attended school in Jakarta. Mr. Obama was the president of the USA."
+    # doc_1 = "Barrack Obama was born in Hawaii. Obama lives."
     print(doc_1)
     print("IIT:")
     pprint.pprint(iit_producer.produce_triples(doc_1))

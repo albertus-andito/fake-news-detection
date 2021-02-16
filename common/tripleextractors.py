@@ -45,13 +45,9 @@ class StanfordExtractor(TripleExtractor):
         :return: list of triples
         :rtype: list
         """
-        output_sentences = json.loads(self.coreNLP.annotate(document, self.props), encoding='utf-8')['sentences']
-        all_triples = set()
-        for sentence in output_sentences:
-            openie = sentence['openie']
-            for openie_triple in openie:
-                triple = Triple(openie_triple['subject'], openie_triple['relation'], [openie_triple['object']])
-                all_triples.add(triple)
+        outputs = json.loads(self.coreNLP.annotate(document, self.props), encoding='utf-8')['sentences']
+        all_triples = [Triple(openie_triple['subject'], openie_triple['relation'], [openie_triple['object']])
+                       for output in outputs for openie_triple in output['openie']]
         return all_triples
 
 
@@ -71,12 +67,10 @@ class IITExtractor(TripleExtractor):
         :return: list of triples
         :rtype: list
         """
-        all_triples = set()
         extractions = self.openie.extract(document)
-        for extraction in extractions:
-            triple = Triple(extraction['extraction']['arg1']['text'], extraction['extraction']['rel']['text'],
-                            [obj['text'] for obj in extraction['extraction']['arg2s']])
-            all_triples.add(triple)
+        all_triples = [Triple(extraction['extraction']['arg1']['text'], extraction['extraction']['rel']['text'],
+                              [obj['text'] for obj in extraction['extraction']['arg2s']])
+                       for extraction in extractions]
         return all_triples
 
 # Testing

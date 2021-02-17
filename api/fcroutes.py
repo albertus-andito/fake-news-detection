@@ -96,30 +96,39 @@ def simple_fact_check():
       200:
         description: Fact-checking result
         schema:
-          id: fact_checking_result
+          id: fact_checking_sentences_result
           properties:
             triples:
               type: array
               items:
                 type: object
                 properties:
-                  triple:
-                    type: object
-                    properties:
-                      subject:
-                        type: string
-                      relation:
-                        type: string
-                      objects:
-                        type: array
-                        items:
-                          type: string
-                  exists:
-                    type: boolean
+                  sentence:
+                    type: string
+                  triples:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        triple:
+                          type: object
+                          properties:
+                            subject:
+                              type: string
+                            relation:
+                              type: string
+                            objects:
+                              type: array
+                              items:
+                                type: string
+                        exists:
+                          type: boolean
             truthfulness:
               type: number
     """
     text = request.get_json()['text']
-    triples, truthfulness = simple_fact_checker.fact_check(text)
-    triples = [{'triple': triple.to_dict(), 'exists': exists} for (triple, exists) in triples.items()]
+    results, truthfulness = simple_fact_checker.fact_check(text)
+    triples = [{'sentence': sentence, 'triples': [{'triple': triple.to_dict(), 'exists': exists}
+                                                  for (triple, exists) in triples.items()]}
+               for sentence, triples in results]
     return {'triples': triples, 'truthfulness': truthfulness}, 200

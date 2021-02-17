@@ -322,21 +322,29 @@ def triples_from_article(source):
             type: string
           triples:
             type: array
-            description: array of triples extracted from the article
+            description: array of sentences and triples extracted from the article
             items:
               type: object
               properties:
-                subject:
+                sentence:
                   type: string
-                relation:
-                  type: string
-                objects:
+                triples:
                   type: array
+                  description: array of triples
                   items:
-                    type: string
-                added:
-                  type: boolean
-                  description: whether the triple is currently added to the knowledge graph or not
+                    type: object
+                    properties:
+                      subject:
+                        type: string
+                      relation:
+                        type: string
+                      objects:
+                        type: array
+                        items:
+                          type: string
+                      added:
+                        type: boolean
+                        description: whether the triple is currently added to the knowledge graph or not
     parameters:
       - name: source
         in: path

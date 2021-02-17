@@ -5,7 +5,11 @@ class SimpleFactChecker(FactChecker):
 
     def fact_check(self, article):
         article_triples = self.get_triples(article)
-        return self.fact_check_triples(article_triples)
+        fc_result = [(sentence, {triple: self.knowledge_graph.check_triple_object_existence(triple)
+                      for triple in triples}) for (sentence, triples) in article_triples]
+        truth_values = [val for sentence, triples in fc_result for val in triples.values()]
+        truthfulness = sum(truth_values) / len(truth_values)
+        return fc_result, truthfulness
 
     def fact_check_triples(self, triples):
         fc_result = {triple: self.knowledge_graph.check_triple_object_existence(triple) for triple in triples}

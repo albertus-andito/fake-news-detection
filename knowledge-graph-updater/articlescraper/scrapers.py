@@ -21,9 +21,9 @@ class ArticleScraper(ABC):
         Constructor method
         """
         load_dotenv(dotenv_path=Path('../../.env'))
-        self.db_client = MongoClient(os.getenv("MONGODB_ADDRESS"))
-        self.db = self.db_client["fnd"]
-        self.db_collection = self.db["articles"]
+        self.db_client = MongoClient(os.getenv('MONGODB_ADDRESS'))
+        self.db = self.db_client['fnd']
+        self.db_collection = self.db['articles']
         self.db_collection.create_index("source", unique=True)
 
     def execute(self, url):
@@ -97,12 +97,12 @@ class BbcScraper(ArticleScraper):
             div = soup.find('div', {'class': 'qa-story-body'})  # for sport news
             text_elements = div.find_all('p')
 
-        texts = [elem.text for elem in text_elements]
+        texts = ' '.join([elem.text for elem in text_elements])
         return {
-            "headlines": [headlines],
-            "date": date,
-            "texts": texts,
-            "source": url
+            'headlines': [headlines],
+            'date': date,
+            'texts': texts,
+            'source': url
         }
 
 
@@ -132,14 +132,14 @@ class IndependentScraper(ArticleScraper):
         content = soup.find(id='main')
         if content is not None:
             text_elements = content.find_all('p')
-            texts = [elem.text for elem in text_elements]
+            texts = ' '.join([elem.text for elem in text_elements])
         else:
             texts = None
         return {
-            "headlines": [header.find('h1').text, header.find('h2').text],
-            "date": date,
-            "texts": texts,
-            "source": url
+            'headlines': [header.find('h1').text, header.find('h2').text],
+            'date': date,
+            'texts': texts,
+            'source': url
         }
 
 
@@ -169,11 +169,21 @@ class GuardianScraper(ArticleScraper):
             content = response['content']
             soup = BeautifulSoup(content['fields']['body'], 'html.parser')
             text_elements = soup.find_all('p')
-            texts = [elem.text for elem in text_elements]
+            texts = ' '.join([elem.text for elem in text_elements])
             return {
-                "headlines": [content['fields']['headline'], content['fields']['trailText']],
-                "date": datetime.fromisoformat(content['webPublicationDate'].replace("Z", "+00:00")),
-                "texts": texts,
-                "source": content['webUrl']
+                'headlines': [content['fields']['headline'], content['fields']['trailText']],
+                'date': datetime.fromisoformat(content['webPublicationDate'].replace("Z", "+00:00")),
+                'texts': texts,
+                'source': content['webUrl']
             }
-        return {"source": url}
+        return {'source': url}
+
+
+if __name__ == '__main__':
+    bbc = BbcScraper()
+    independent = IndependentScraper()
+    guardian = GuardianScraper()
+
+    bbc.execute("https://www.bbc.co.uk/news/world-us-canada-55210243")
+    independent.execute("https://www.independent.co.uk/news/science/archaeology/oxford-archaeology-dig-skeleton-hertfordshire-b1767027.html")
+    guardian.execute("https://www.theguardian.com/business/2020/dec/15/barclays-fined-fca-covid-crisis")

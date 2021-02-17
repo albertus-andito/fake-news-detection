@@ -2,7 +2,7 @@ import logging
 import logging.config
 import os
 from json import JSONDecodeError
-from nltk.tokenize import word_tokenize
+from nltk.tokenize import sent_tokenize, word_tokenize
 from spacy.matcher import Matcher
 
 from definitions import ROOT_DIR, LOGGER_CONFIG_PATH
@@ -59,7 +59,7 @@ class TripleProducer:
         """
         Produce triples extracted from the document that are processed through the pipeline.
         The triples produced are in the form of:
-        [ {'subject': subject, 'relation': relation, 'object':[object_1, object2, ...]},
+        [ (sentence, [{'subject': subject, 'relation': relation, 'object':[object_1, object2, ...], ...]),
           ...
         ]
 
@@ -68,15 +68,16 @@ class TripleProducer:
 
         :param document: raw texts of document
         :type document: str
-        :return: a list of triples, as explained
+        :return: a list of tuples, of sentence and its triples, as explained
         :rtype: list
         """
         spacy_doc = self.nlp(document)
-        original_sentences = list(spacy_doc.sents)
+        original_sentences = sent_tokenize(document)
 
         # coreference resolution
         document = self.coref_resolution(spacy_doc)
-        coref_resolved_sentences = [s.text for s in self.nlp(document).sents]
+        # capitalise start of sentence
+        coref_resolved_sentences = sent_tokenize(self.__capitalise_sentence_start(document))
 
         # extract spo triples from sentences
         all_triples = self.extract_triples(coref_resolved_sentences)
@@ -96,8 +97,8 @@ class TripleProducer:
         all_triples = self.spot_entities_with_context(document, all_triples)
 
         # link relations using Falcon
-        triples_with_linked_relations = self.link_relations(coref_resolved_sentences, all_triples)
-        # triples_with_linked_relations = None
+        # triples_with_linked_relations = self.link_relations(coref_resolved_sentences, all_triples)
+        triples_with_linked_relations = None
 
         # lemmatise relations
         all_triples = self.lemmatise_relations(spacy_doc, all_triples)
@@ -109,15 +110,22 @@ class TripleProducer:
         if triples_with_linked_relations is not None and len(triples_with_linked_relations) > 0:
             all_triples = [list(set(ori_triples + falcon_triples))
                            for ori_triples, falcon_triples in zip(all_triples, triples_with_linked_relations)]
+        else:
+            all_triples = [list(set(triples)) for triples in all_triples]
+
+        # remove triples with empty component
+        all_triples = self.remove_empty_components(all_triples)
 
         # Subject needs to be a DBpedia resource/entity
         all_triples = self.convert_subjects(all_triples)
-
+        self.logger.info(all_triples)
         if len(original_sentences) != len(all_triples):
             self.logger.error("Problem occurred during sentenization! Different lengths of sentences identified.")
             raise Exception("Different length between sentences and triples")
 
-        return [*zip(original_sentences, all_triples)]
+        results = [(sentence, triples) for (sentence, triples) in zip(original_sentences, all_triples) if len(triples) > 0]
+
+        return results
 
     def coref_resolution(self, spacy_doc):
         """
@@ -128,6 +136,11 @@ class TripleProducer:
         associated cluster.
         """
         return spacy_doc._.coref_resolved
+
+    def __capitalise_sentence_start(self, document):
+        sentences = document.split('. ')
+        capitalised = [sentence[0].capitalize() + sentence[1:] for sentence in sentences]
+        return '. '.join(capitalised)
 
     def extract_triples(self, sentences):
         """
@@ -141,7 +154,7 @@ class TripleProducer:
             triples = [self.extractor.extract(sentence) for sentence in sentences]
             return triples
         except JSONDecodeError as e:
-            self.logger.error(e.msg)
+            self.logger.error('Triple extraction erro')
 
     def remove_stopwords(self, all_triples):
         """
@@ -202,9 +215,9 @@ class TripleProducer:
         for sentence in all_triples:
             filtered_triples = []
             for triple in sentence:
-                if any(triple.subject in word or word in triple.subject for word in in_list):
+                if triple.subject in in_list: #if any(triple.subject in word or word in triple.subject for word in in_list):
                     for obj in triple.objects:
-                        if any(obj in word or word in obj for word in in_list):
+                        if obj in in_list: #if any(obj in word or word in obj for word in in_list):
                             filtered_triples.append(triple)
                             break
             filtered_triples_sentences.append(filtered_triples)
@@ -394,6 +407,11 @@ class TripleProducer:
         else:
             s = "".join(word[0].upper() + word[1:].lower() for word in words)
             return s[0].lower() + s[1:]
+
+    def remove_empty_components(self, all_triples):
+        return [[triple for triple in sentence
+                 if triple.subject != '' and triple.relation != '' and all(obj != '' for obj in triple.objects)]
+                for sentence in all_triples]
         
     def convert_subjects(self, all_triples):
         """
@@ -428,23 +446,23 @@ if __name__ == "__main__":
     # doc_2 = "Stores and supermarkets in Veracruz (Mexico) will close due to the new coronavirus. The local government " \
     #         "has asked people to buy supplies. "
 
-    doc_2 = "Onion cures COVID19."
-    print(doc_2)
-    print("IIT:")
-    pprint.pprint(iit_producer.produce_triples(doc_2))
-    print("Stanford:")
-    pprint.pprint(stanford_producer.produce_triples(doc_2))
-
-    doc_3 = "Biomagnetism cures coronavirus."
-    print(doc_3)
-    print("IIT:")
-    pprint.pprint(iit_producer.produce_triples(doc_3))
-    print("Stanford:")
-    pprint.pprint(stanford_producer.produce_triples(doc_3))
-
-    doc_4 = "UV rays from the sun can cure COVID-19."
-    print(doc_4)
-    print("IIT:")
-    pprint.pprint(iit_producer.produce_triples(doc_4))
-    print("Stanford:")
-    pprint.pprint(stanford_producer.produce_triples(doc_4))
+    # doc_2 = "Onion cures COVID19."
+    # print(doc_2)
+    # print("IIT:")
+    # pprint.pprint(iit_producer.produce_triples(doc_2))
+    # print("Stanford:")
+    # pprint.pprint(stanford_producer.produce_triples(doc_2))
+    #
+    # doc_3 = "Biomagnetism cures coronavirus."
+    # print(doc_3)
+    # print("IIT:")
+    # pprint.pprint(iit_producer.produce_triples(doc_3))
+    # print("Stanford:")
+    # pprint.pprint(stanford_producer.produce_triples(doc_3))
+    #
+    # doc_4 = "UV rays from the sun can cure COVID-19."
+    # print(doc_4)
+    # print("IIT:")
+    # pprint.pprint(iit_producer.produce_triples(doc_4))
+    # print("Stanford:")
+    # pprint.pprint(stanford_producer.produce_triples(doc_4))

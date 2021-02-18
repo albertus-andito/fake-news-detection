@@ -18,7 +18,13 @@ function ArticleTextForm({loading, setLoading, setResult}) {
         .then(function (response) {
             console.log(response);
             setLoading(false);
-            setResult(response);
+            const result = []
+            response.data.triples.forEach((sentence) => {
+                sentence.triples.forEach((triple) => {
+                    result.push({sentence: sentence.sentence, triple: triple.triple, exists: triple.exists})
+                })
+            })
+            setResult({data: {triples: result, truthfulness: response.data.truthfulness}});
         })
     }
 
@@ -92,6 +98,11 @@ function FactCheckerView() {
     ];
 
     const columns = [
+        {
+            title: 'Sentence',
+            dataIndex: 'sentence',
+            key: 'sentence',
+        },
         {
             title: 'Subject',
             dataIndex: ['triple', 'subject'],

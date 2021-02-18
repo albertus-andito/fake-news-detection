@@ -90,14 +90,21 @@ function PendingTriplesTable({ pendingTriples, conflictedTriples, getPendingTrip
     }
 
     const showAddModal = () => {
-        const triplesToAdd = pendingTriples.filter((triple) => selectedRowKeys.includes(triple.key));
-        triplesToAdd.forEach((triple) => {
-            triple.triples = [{subject: triple.subject, relation: triple.relation, objects: triple.objects, added: triple.added}];
+        const selectedTriples = pendingTriples.filter((triple) => selectedRowKeys.includes(triple.key));
+        const triplesToAdd = selectedTriples.map((triple) => {
+            const tripleToAdd = {
+                source: triple.source,
+                triples: [{
+                    sentence: triple.sentence,
+                    triples: [{subject: triple.subject, relation: triple.relation, objects: triple.objects, added: triple.added}]
+                }]
+            }
+            return tripleToAdd
         })
         confirm({
             title: 'Do you want to add these triples to the knowledge graph?',
             icon: <ExclamationCircleOutlined />,
-            content: <Table dataSource={triplesToAdd} columns={tripleColumns} pagination={{hideOnSinglePage: true}} scroll={{x: true}} />,
+            content: <Table dataSource={selectedTriples} columns={tripleColumns} pagination={{hideOnSinglePage: true}} scroll={{x: true}} />,
             onOk() {
                 console.log(triplesToAdd)
                 return axios.post('/kgu/article-triples/insert/', triplesToAdd)
@@ -112,19 +119,25 @@ function PendingTriplesTable({ pendingTriples, conflictedTriples, getPendingTrip
     }
 
     const showDiscardModal = () => {
-        const triplesToDelete = pendingTriples.filter((triple) => selectedRowKeys.includes(triple.key));
-        triplesToDelete.forEach((triple) => {
-            triple.triples = [{subject: triple.subject, relation: triple.relation, objects: triple.objects, added: triple.added}];
+        const selectedTriples = pendingTriples.filter((triple) => selectedRowKeys.includes(triple.key));
+        const triplesToDelete = selectedTriples.map((triple) => {
+            const tripleToAdd = {
+                source: triple.source,
+                triples: [{
+                    sentence: triple.sentence,
+                    triples: [{subject: triple.subject, relation: triple.relation, objects: triple.objects, added: triple.added}]
+                }]
+            }
+            return tripleToAdd
         })
         confirm({
             title: 'Are you sure you want to delete these triples?',
             icon: <ExclamationCircleOutlined />,
-            content: <Table dataSource={triplesToDelete} columns={tripleColumns} pagination={{hideOnSinglePage: true}} scroll={{x: true}} />,
+            content: <Table dataSource={selectedTriples} columns={tripleColumns} pagination={{hideOnSinglePage: true}} scroll={{x: true}} />,
             okText: 'Yes',
             okType: 'danger',
             cancelText: 'No',
             onOk() {
-                console.log(triplesToDelete)
                 return axios.delete('/kgu/article-triples/pending/', { data: triplesToDelete})
                             .then(function (response) {
                                 getPendingTriples();
@@ -143,6 +156,11 @@ function PendingTriplesTable({ pendingTriples, conflictedTriples, getPendingTrip
             dataIndex: 'source',
             key: 'source',
             render: (text) => <a href={text}>{text}</a>
+        },
+        {
+            title: 'Sentence',
+            dataIndex: 'sentence',
+            key: 'sentence',
         },
         {
             title: 'Subject',
@@ -221,9 +239,12 @@ function KnowledgeGraphUpdaterView() {
         .then(function (response) {
             console.log(response);
             let data = [];
-            response.data.all_pending.forEach((row) => {
-                row.triples.forEach((triple) => {
-                    data.push({...triple, source: row.source, key: triple['subject']+triple['relation']+triple['objects']})
+            response.data.all_pending.forEach((article) => {
+                article.triples.forEach((sentence) => {
+                    sentence.triples.forEach((triple) => {
+                        data.push({...triple, source: article.source, sentence: sentence.sentence,
+                            key: sentence.sentence+triple['subject']+triple['relation']+triple['objects']})
+                    })
                 })
             })
             setPendingTriples(data);

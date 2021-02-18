@@ -53,37 +53,43 @@ class KnowledgeGraphUpdater:
         :type kg_auto_update: bool
         """
         for article in self.db_article_collection.find({'triples': None}):
-            self.logger.info('Extracting triples for article: %s', article['source'])
-            # set 'added' to False for all triples initially
-            triples = [{**triple.to_dict(), **{'added': False}} for triple in
-                       self.triple_producer.produce_triples(' '.join(article['texts']))]
+            try:
+                self.logger.info('Extracting triples for article: %s', article['source'])
+                # set 'added' to False for all triples initially
+                triples = [{'sentence': results[0],
+                            'triples': [{**triple.to_dict(), **{'added': False}} for triple in results[1]]}
+                           for results in self.triple_producer.produce_triples(article['texts'])]
 
-            conflicted_triples = []
-            for triple in triples:
-                exists = self.knowledge_graph.check_triple_object_existence(Triple.from_dict(triple))
-                # The exact triple already exists in the KG. Mark as added.
-                if exists is True:
-                    triple['added'] = True
-                # check for conflict
-                else:
-                    conflicts = self.knowledge_graph.get_triples(triple['subject'], triple['relation'])
-                    if conflicts is not None:
-                        a_triple = triple.copy()
-                        del a_triple['added']
-                        for conflict in conflicts:
-                            conflicted_triples.append(
-                                {'toBeInserted': a_triple, 'inKnowledgeGraph': conflict.to_dict()})
+                conflicted_triples = []
+                for sentence in triples:
+                    for triple in sentence['triples']:
+                        exists = self.knowledge_graph.check_triple_object_existence(Triple.from_dict(triple))
+                        # The exact triple already exists in the KG. Mark as added.
+                        if exists is True:
+                            triple['added'] = True
+                        # check for conflict
+                        else:
+                            conflicts = self.knowledge_graph.get_triples(triple['subject'], triple['relation'])
+                            if conflicts is not None:
+                                a_triple = triple.copy()
+                                del a_triple['added']
+                                for conflict in conflicts:
+                                    conflicted_triples.append(
+                                        {'toBeInserted': a_triple, 'inKnowledgeGraph': conflict.to_dict()})
 
-            self.logger.debug('Found conflicts for article %s: %s', article['source'], conflicted_triples)
+                self.logger.debug('Found conflicts for article %s: %s', article['source'], conflicted_triples)
 
-            self.db_article_collection.update_one({'source': article['source']}, {'$set': {'triples': triples}})
+                self.db_article_collection.update_one({'source': article['source']}, {'$set': {'triples': triples}})
 
-            if len(conflicted_triples) > 0:  # save conflicts
-                self.db_article_collection.update_one({'source': article['source']},
-                                                      {'$set': {'conflicts': conflicted_triples}})
+                if len(conflicted_triples) > 0:  # save conflicts
+                    self.db_article_collection.update_one({'source': article['source']},
+                                                          {'$set': {'conflicts': conflicted_triples}})
 
-            if (kg_auto_update is None and self.auto_update) or kg_auto_update:
-                self.insert_all_nonconflicting_knowledge(article['source'])
+                if (kg_auto_update is None and self.auto_update) or kg_auto_update:
+                    self.logger.info('Inserting non conflicting knowledge for ' + article['source'])
+                    self.insert_all_nonconflicting_knowledge(article['source'])
+            except Exception as e:
+                self.logger.error("Exception occured when extracting article" + article['source'] + ": " + e)
 
     def insert_all_nonconflicting_knowledge(self, article_url):
         """
@@ -97,16 +103,17 @@ class KnowledgeGraphUpdater:
         else:
             conflicts = []
 
-        for triple in article['triples']:
-            # We need to delete the 'added' field first because we want to check equality with 'conflicts' list.
-            # By default, the 'added' field should have been False anyway at this stage, because the triple hasn't been
-            # inserted.
-            del triple['added']
-            if triple not in conflicts:
-                self.knowledge_graph.insert_triple_object(Triple.from_dict(triple))
-                triple['added'] = True
-            else:
-                triple['added'] = False
+        for sentence in article['triples']:
+            for triple in sentence['triples']:
+                # We need to delete the 'added' field first because we want to check equality with 'conflicts' list.
+                # By default, the 'added' field should have been False anyway at this stage, because the triple hasn't been
+                # inserted.
+                del triple['added']
+                if triple not in conflicts:
+                    self.knowledge_graph.insert_triple_object(Triple.from_dict(triple))
+                    triple['added'] = True
+                else:
+                    triple['added'] = False
         self.db_article_collection.update_one({'source': article['source']}, {'$set': {'triples': article['triples']}})
 
     def delete_all_knowledge_from_article(self, article_url):
@@ -119,7 +126,8 @@ class KnowledgeGraphUpdater:
         self.logger.info('Deleting triples of article: %s', article_url)
         article = self.db_article_collection.find_one({'source': article_url})
         if 'triples' in article:
-            self.delete_knowledge(article['triples'])
+            for sentence in article['triples']:
+                self.delete_knowledge(sentence['triples'])
 
     def delete_knowledge(self, triples):
         """
@@ -130,10 +138,12 @@ class KnowledgeGraphUpdater:
         for triple in triples:
             self.knowledge_graph.delete_triple_object(Triple.from_dict(triple))
             # Need to update both triples from articles and from user input. We don't know where the triple was from.
-            self.db_article_collection.update_many({'triples': {'$elemMatch': {'subject': triple['subject'],
-                                                                               'relation': triple['relation'],
-                                                                               'objects': triple['objects']}}},
-                                                   {'$set': {'triples.$.added': False}})
+            self.db_article_collection.update_many({},
+                                                   {'$set': {'triples.$[].triples.$[triple].added': False}},
+                                                   array_filters=[{'triple.subject': triple['subject'],
+                                                                   'triple.relation': triple['relation'],
+                                                                   'triple.objects': triple['objects']
+                                                                   }])
             # TODO: do we need to care about 'added' in 'conflicts' field?
             self.db_article_collection.update_many({'conflicts':
                 {'$elemMatch':
@@ -161,7 +171,9 @@ class KnowledgeGraphUpdater:
         """
         article = self.db_article_collection.find_one({'source': article_url, 'triples': {'$exists': True}})
         if article is not None:
-            return [triple for triple in article['triples'] if triple['added'] is False]
+            return [{'sentence': sentence['sentence'],
+                     'triples': [triple for triple in sentence['triples'] if triple['added'] is False]}
+                    for sentence in article['triples']]
 
     def delete_article_pending_knowledge(self, article_url, triples):
         """
@@ -172,17 +184,22 @@ class KnowledgeGraphUpdater:
         :type triples: list
         :return:
         """
-        for triple in triples:
-            self.db_article_collection.update_one({'source': article_url},
-                                                  {'$pull': {'triples': triple}})
-            self.db_article_collection.update_one({'source': article_url},
-                                                  {'$pull': {'conflicts':
-                                                      {'toBeInserted': {
-                                                          'subject': triple['subject'],
-                                                          'relation': triple['relation'],
-                                                          'objects': triple['objects']}
-                                                      }
-                                                  }})
+        for sentence in triples:
+            for triple in sentence['triples']:
+                self.db_article_collection.update_one({'source': article_url},
+                                                      {'$pull': {'triples.$[sentence].triples':
+                                                                     {'subject': triple['subject'],
+                                                                      'relation': triple['relation'],
+                                                                      'objects': triple['objects']}}},
+                                                            array_filters=[{'sentence.sentence': sentence['sentence']}])
+                self.db_article_collection.update_one({'source': article_url},
+                                                      {'$pull': {'conflicts':
+                                                          {'toBeInserted': {
+                                                              'subject': triple['subject'],
+                                                              'relation': triple['relation'],
+                                                              'objects': triple['objects']}
+                                                          }
+                                                      }})
 
     def get_all_pending_knowledge(self):
         """
@@ -193,7 +210,10 @@ class KnowledgeGraphUpdater:
         # TODO: add pagination
         articles = []
         for article in self.db_article_collection.find({'triples': {'$exists': True}}):
-            pending = [triple for triple in article['triples'] if triple['added'] is False]
+            pending = [{'sentence': sentence['sentence'],
+                        'triples': [triple for triple in sentence['triples'] if triple['added'] is False]}
+                       for sentence in article['triples']]
+            # pending = [triple for triple in article['triples'] if triple['added'] is False]
             if len(pending) > 0:
                 articles.append({
                     'source': article['source'],
@@ -266,37 +286,58 @@ class KnowledgeGraphUpdater:
         """
         for article in articles_triples:
             stored_triples = self.db_article_collection.find_one({'source': article['source']})['triples']
-            for triple in article['triples']:
-                # FIXME: check for conflict? probably no need to
-                print(triple)
-                self.knowledge_graph.insert_triple_object(Triple.from_dict(triple))
-                if triple in stored_triples:
-                    self.db_article_collection.update_many({'source': article['source'],
-                                                            'triples': {'$elemMatch': {'subject': triple['subject'],
-                                                                                       'relation': triple['relation'],
-                                                                                       'objects': triple['objects']}}},
-                                                           {'$set': {'triples.$.added': True}}
-                                                           )
-                    self.db_article_collection.update_many({'source': article['source'],
-                                                            'conflicts':
-                                                                {'$elemMatch':
-                                                                    {'toBeInserted': {
-                                                                        'subject': triple['subject'],
-                                                                        'relation': triple['relation'],
-                                                                        'objects': triple['objects']}
+            for sentence in article['triples']:
+                stored_sentence = next((sent_triples for sent_triples in stored_triples
+                                        if sent_triples['sentence'] == sentence['sentence']), None)
+                for triple in sentence['triples']:
+                    # FIXME: check for conflict? probably no need to
+                    self.knowledge_graph.insert_triple_object(Triple.from_dict(triple))
+                    if stored_sentence is not None and triple in stored_sentence['triples']:
+                        self.db_article_collection.update_many({'source': article['source']},
+                                                               {'$set': {
+                                                                   'triples.$[].triples.$[triple].added': True}},
+                                                               array_filters=[
+                                                                   # {'sentence.sentence': stored_sentence['sentence']},
+                                                                   {'triple.subject': triple['subject'],
+                                                                    'triple.relation': triple['relation'],
+                                                                    'triple.objects': triple['objects']
+                                                                    }]
+                                                               )
+                        self.db_article_collection.update_many({'source': article['source'],
+                                                                'conflicts':
+                                                                    {'$elemMatch':
+                                                                        {'toBeInserted': {
+                                                                            'subject': triple['subject'],
+                                                                            'relation': triple['relation'],
+                                                                            'objects': triple['objects']}
+                                                                        }
                                                                     }
-                                                                }
-                                                            },
-                                                           {'$set': {'conflicts.$.added': True}})
-                else:
-                    # accommodate triples about the article that are manually inserted
-                    self.db_article_collection.update_one({'source': article['source']},
-                                                          {'$push': {'triples':
-                                                                         {'subject': triple['subject'],
-                                                                          'relation': triple['relation'],
-                                                                          'objects': triple['objects'],
-                                                                          'added': True}
-                                                                     }})
+                                                                },
+                                                               {'$set': {'conflicts.$.added': True}})
+                    # new triple from existing sentence
+                    elif stored_sentence is not None:
+                        self.db_article_collection.update_one({'source': article['source'],
+                                                               'triples': {'$elemMatch':
+                                                                               {'sentence': stored_sentence[
+                                                                                   'sentence']}}},
+                                                              {'$push': {'triples.$.triples':
+                                                                             {'subject': triple['subject'],
+                                                                              'relation': triple['relation'],
+                                                                              'objects': triple['objects'],
+                                                                              'added': True}}}
+                                                              )
+                        # may need to check other sentences, or even articles for the same triple
+                    # new triple from non-existing sentence
+                    else:
+                        # accommodate triples about the article that are manually inserted
+                        self.db_article_collection.update_one({'source': article['source']},
+                                                              {'$push': {'triples': {'sentence': '', 'triples': [
+                                                                  {'subject': triple['subject'],
+                                                                   'relation': triple['relation'],
+                                                                   'objects': triple['objects'],
+                                                                   'added': True}]}
+                                                                         }})
+                        # may need to check other sentences, or even articles for the same triple
 
     def insert_knowledge(self, triple, check_conflict):
         """

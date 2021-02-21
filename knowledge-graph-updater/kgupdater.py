@@ -89,7 +89,7 @@ class KnowledgeGraphUpdater:
                     self.logger.info('Inserting non conflicting knowledge for ' + article['source'])
                     self.insert_all_nonconflicting_knowledge(article['source'])
             except Exception as e:
-                self.logger.error("Exception occured when extracting article" + article['source'] + ": " + e)
+                self.logger.error("Exception occured when extracting article " + article['source'] + ": " + e.__str__())
 
     def insert_all_nonconflicting_knowledge(self, article_url):
         """

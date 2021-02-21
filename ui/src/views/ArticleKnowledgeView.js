@@ -27,6 +27,13 @@ const tripleColumns = [
     },
 ];
 
+function arrayEquals(a, b) {
+    return Array.isArray(a) &&
+           Array.isArray(b) &&
+           a.length === b.length &&
+           a.every((val, index) => val === b[index]);
+}
+
 function ConflictModal({ conflict }) {
     const [isModalVisible, setIsModalVisible] = useState(false);
 
@@ -192,7 +199,7 @@ function PendingTriplesTable({ pendingTriples, conflictedTriples, getPendingTrip
                 let conflict = article[0].conflicts.filter(function(el) {
                     return el.toBeInserted.subject === row.subject
                         && el.toBeInserted.relation === row.relation
-                        // && el.toBeInserted.objects === row.objects;
+                        && arrayEquals(el.toBeInserted.objects, row.objects);
                 });
                 return conflict.length > 0 ? <ConflictModal conflict={conflict}/> : 'No';
             }
@@ -227,7 +234,7 @@ function PendingTriplesTable({ pendingTriples, conflictedTriples, getPendingTrip
     );
 ;}
 
-function KnowledgeGraphUpdaterView() {
+function ArticleKnowledgeView() {
     const [pendingTriples, setPendingTriples] = useState();
     const [conflictedTriples, setConflictedTriples] = useState();
     const [isUpdating, setIsUpdating] = useState(false);
@@ -314,4 +321,4 @@ function KnowledgeGraphUpdaterView() {
     );
 };
 
-export default KnowledgeGraphUpdaterView;
+export default ArticleKnowledgeView;

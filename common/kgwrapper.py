@@ -43,17 +43,17 @@ class KnowledgeGraphWrapper:
         :return: True if triple exists, False otherwise
         :rtype: bool
         """
-        obj_query = obj.rsplit('/')[-1]
+        # obj_query = obj.rsplit('/')[-1]
         if obj.startswith("http://dbpedia.org/resource"):
-            obj_query = ":" + obj_query
+            obj_query = "<" + obj + ">"
         else:
-            obj_query = '"{}"'.format(obj_query)
+            obj_query = '"{}"'.format(obj)
         query = """
                 PREFIX : <http://dbpedia.org/resource/>
                 ASK {{
-                  :{0} dbo:{1} {2} .
+                  <{0}> dbo:{1} {2} .
                 }}
-                """.format(subject.rsplit('/')[-1], relation.rsplit('/')[-1], obj_query)
+                """.format(subject, relation.rsplit('/')[-1], obj_query)
         self.sparql.setQuery(query)
         self.sparql.setReturnFormat(JSON)
         self.logger.info("Checking triple existence: %s, %s, %s", subject, relation, obj)
@@ -74,9 +74,9 @@ class KnowledgeGraphWrapper:
         query = """
                 PREFIX : <http://dbpedia.org/resource/>
                 SELECT ?o WHERE{{
-                :{0} dbo:{1} ?o .
+                <{0}> dbo:{1} ?o .
                 }}
-                """.format(subject.rsplit('/')[-1], relation.rsplit('/')[-1])
+                """.format(subject, relation.rsplit('/')[-1])
         self.sparql.setQuery(query)
         self.sparql.setReturnFormat(JSON)
         self.logger.info("Getting triples: %s, %s", subject, relation)
@@ -101,9 +101,9 @@ class KnowledgeGraphWrapper:
         query = """
                 PREFIX : <http://dbpedia.org/resource/>
                 SELECT ?r ?o WHERE{{
-                :{0} ?r ?o .
+                <{0}> ?r ?o .
                 }}
-                """.format(subject.rsplit('/')[-1])
+                """.format(subject)
         self.sparql.setQuery(query)
         self.sparql.setReturnFormat(JSON)
         self.logger.info("Getting entity: %s,", subject)
@@ -134,21 +134,21 @@ class KnowledgeGraphWrapper:
         :param obj: triple's object
         :type obj: str
         """
-        obj_query = obj.rsplit('/')[-1]
+        # obj_query = obj.rsplit('/')[-1]
         if obj.startswith("http://dbpedia.org/resource"):
-            obj_query = ":" + obj_query
+            obj_query = "<" + obj + ">"
         else:
-            obj_query = '"{}"'.format(obj_query)
+            obj_query = '"{}"'.format(obj)
         query = """
                 PREFIX : <http://dbpedia.org/resource/>
                 INSERT DATA
                 {{
                     GRAPH <http://dbpedia.org>
                     {{
-                        :{0} dbo:{1} {2} .
+                        <{0}> dbo:{1} {2} .
                     }}
                 }}
-                """.format(subject.rsplit('/')[-1], relation.rsplit('/')[-1], obj_query)
+                """.format(subject, relation.rsplit('/')[-1], obj_query)
         self.sparql.setMethod(POST)
         self.sparql.setQuery(query)
         self.sparql.setReturnFormat(JSON)
@@ -176,21 +176,21 @@ class KnowledgeGraphWrapper:
         :param obj: triple's object
         :type obj: str
         """
-        obj_query = obj.rsplit('/')[-1]
+        # obj_query = obj.rsplit('/')[-1]
         if obj.startswith("http://dbpedia.org/resource"):
-            obj_query = ":" + obj_query
+            obj_query = "<" + obj + ">"
         else:
-            obj_query = '"{}"'.format(obj_query)
+            obj_query = '"{}"'.format(obj)
         query = """
                 PREFIX : <http://dbpedia.org/resource/>
                 DELETE DATA
                 {{
                   GRAPH <http://dbpedia.org>
                   {{
-                    :{0} dbo:{1} {2} .
+                    <{0}> dbo:{1} {2} .
                   }}
                 }} 
-                """.format(subject.rsplit('/')[-1], relation.rsplit('/')[-1], obj_query)
+                """.format(subject, relation.rsplit('/')[-1], obj_query)
         self.sparql.setMethod(POST)
         self.sparql.setQuery(query)
         self.sparql.setReturnFormat(JSON)

@@ -1,4 +1,4 @@
-import {Button, Card, Divider, Modal, Table, Tag, Typography} from "antd";
+import {Button, Card, Divider, Modal, Popover, Radio, Space, Switch, Table, Tag, Typography} from "antd";
 import React, { useState, useEffect } from 'react';
 import axios from "axios";
 import {convertObjectsToDBpediaLink, convertToDBpediaLink} from "../utils";
@@ -238,6 +238,8 @@ function ArticleKnowledgeView() {
     const [pendingTriples, setPendingTriples] = useState();
     const [conflictedTriples, setConflictedTriples] = useState();
     const [isUpdating, setIsUpdating] = useState(false);
+    const [autoAdd, setAutoAdd] = useState(false);
+    const [extractionScope, setExtractionScope] = useState('noun_phrases')
 
 
 
@@ -267,7 +269,12 @@ function ArticleKnowledgeView() {
     };
 
     const onUpdateClick = () => {
-        axios.get('/kgu/updates')
+        axios.get('/kgu/updates', {
+            params: {
+                auto_update: autoAdd,
+                extraction_scope: extractionScope,
+            }
+        })
         .then(function() {
             setIsUpdating(true);
         });
@@ -284,6 +291,28 @@ function ArticleKnowledgeView() {
         }, 3000);
     };
 
+    const onAutoAddChange = (checked) =>  {
+        setAutoAdd(checked);
+    }
+
+    const autoAddPopoverContent = (
+        <div>
+            <p>If this is set to on, all non-conflicting triples will be automatically added to the knowledge graph.</p>
+            <p>Otherwise, all triples will be put in the pending triples table below.</p>
+        </div>
+    )
+
+    const onExtractionScopeChange = (e) =>{
+        setExtractionScope(e.target.value);
+    }
+
+    const extractionScopePopoverContent = (
+        <div>
+            <p>The scope of the extraction, deciding whether it should include only triples with relations between
+                'named_entities', 'noun_phrases', or 'all'.</p>
+        </div>
+    )
+
     useEffect(() => {
         getPendingTriples();
         getConflictedTriples();
@@ -296,15 +325,32 @@ function ArticleKnowledgeView() {
             <Typography style={{ textAlign: 'center' }}>
                 Trigger an update so that triples are extracted from the scraped news articles.
             </Typography>
-            <Button
-                type='primary'
-                style={{ margin: '10px auto'}}
-                onClick={onUpdateClick}
-                loading={isUpdating}
-            >
-                Update
-            </Button>
-
+            <Space direction='vertical'>
+                <Space>
+                    <Popover content={autoAddPopoverContent} title='Automatically Add Knowledge'>
+                        <Switch onChange={onAutoAddChange}/>
+                    </Popover>
+                    Automatically add non-conflicting triples to the knowledge graph
+                </Space>
+                <Popover content={extractionScopePopoverContent} title='Extraction Scope'>
+                    <Space>
+                        Extraction scope:
+                        <Radio.Group value={extractionScope} onChange={onExtractionScopeChange} defaultValue='noun_phrases'>
+                            <Radio value='noun_phrases'>Noun phrases</Radio>
+                            <Radio value='named_entities'>Named entities</Radio>
+                            <Radio value='all'>All</Radio>
+                        </Radio.Group>
+                    </Space>
+                </Popover>
+                <Button
+                    type='primary'
+                    style={{ margin: '10px auto'}}
+                    onClick={onUpdateClick}
+                    loading={isUpdating}
+                >
+                    Update
+                </Button>
+            </Space>
             <Divider>Pending Triples</Divider>
             <Typography style={{ textAlign: 'center' }}>
                 Triples to be added to the knowledge graph.

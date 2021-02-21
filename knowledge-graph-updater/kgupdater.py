@@ -42,7 +42,7 @@ class KnowledgeGraphUpdater:
         else:
             self.auto_update = auto_update
 
-    def update_missed_knowledge(self, kg_auto_update=None):
+    def update_missed_knowledge(self, kg_auto_update=None, extraction_scope=None):
         """
         Extract triples from stored articles whose triples has not been extracted yet, and save the triples to the DB.
         Triples that have conflicts in the knowledge graph are identified.
@@ -51,6 +51,9 @@ class KnowledgeGraphUpdater:
         knowledge graph or not. This will only matter if the auto_update field is False. If the auto_update field is
         already True, then this parameter will not be looked upon.
         :type kg_auto_update: bool
+        :param extraction_scope: The scope of the extraction, deciding whether it should include only relations between
+        'named_entities', 'noun_phrases', or 'all.
+        :type extraction_scope: str
         """
         for article in self.db_article_collection.find({'triples': None}):
             try:
@@ -58,7 +61,8 @@ class KnowledgeGraphUpdater:
                 # set 'added' to False for all triples initially
                 triples = [{'sentence': results[0],
                             'triples': [{**triple.to_dict(), **{'added': False}} for triple in results[1]]}
-                           for results in self.triple_producer.produce_triples(article['texts'])]
+                           for results in self.triple_producer.produce_triples(article['texts'],
+                                                                               extraction_scope=extraction_scope)]
 
                 conflicted_triples = []
                 for sentence in triples:

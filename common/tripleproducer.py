@@ -55,7 +55,7 @@ class TripleProducer:
                                   disable_existing_loggers=False)
         self.logger = logging.getLogger()
 
-    def produce_triples(self, document):
+    def produce_triples(self, document, extraction_scope=None):
         """
         Produce triples extracted from the document that are processed through the pipeline.
         The triples produced are in the form of:
@@ -68,9 +68,16 @@ class TripleProducer:
 
         :param document: raw texts of document
         :type document: str
+        :param extraction_scope: The scope of the extraction, deciding whether it should include only relations between
+        'named_entities', 'noun_phrases', or 'all. Defaults to the extraction_scope member variable.
+        :type extraction_scope: str
         :return: a list of tuples, of sentence and its triples, as explained
         :rtype: list
         """
+        extraction_scope = self.extraction_scope if extraction_scope is None else extraction_scope
+        if extraction_scope not in ['named_entities', 'noun_phrases', 'all']:
+            raise ValueError("The extraction_scope is unrecognised. Use 'named_entities', 'noun_phrases', or 'all'.")
+
         spacy_doc = self.nlp(document)
         original_sentences = sent_tokenize(document)
 
@@ -83,14 +90,14 @@ class TripleProducer:
         all_triples = self.extract_triples(coref_resolved_sentences)
 
         # filter subjects and objects according to extraction_scope
-        if self.extraction_scope == 'named_entities':
+        if extraction_scope == 'named_entities':
             all_triples = self.filter_in_named_entities(spacy_doc, all_triples)
-        elif self.extraction_scope == 'noun_phrases':
+        elif extraction_scope == 'noun_phrases':
             all_triples = self.filter_in_noun_phrases(spacy_doc, all_triples)
         # TODO: combined extraction scopes of named_entities and noun_phrases?
 
         # remove stopwords from Subject and Object if scope is 'named_entities' or 'noun_phrases'
-        if self.extraction_scope != 'all':
+        if extraction_scope != 'all':
             all_triples = self.remove_stopwords(all_triples)
 
         # map to dbpedia resource (dbpedia spotlight) for Named Entities

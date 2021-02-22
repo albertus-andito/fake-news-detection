@@ -58,6 +58,12 @@ def trigger_updates():
         description: whether the non-conflicting extracted triples are added to the knowledge graph automatically or not.
         required: false
         type: Boolean
+      - name: extraction_scope
+        in: query
+        description: The scope of the extraction, deciding whether it should include only relations between
+                     'named_entities', 'noun_phrases', or 'all.
+        required: false
+        type: String
     responses:
       202:
         description: Request to update is submitted and being processed.
@@ -75,7 +81,11 @@ def trigger_updates():
             auto_update = False
         else:
             auto_update = None
-        async_task = AsyncUpdate(kgu, kg_auto_update=auto_update)
+        if request.args.get('extraction_scope') is None:
+            extraction_scope = None
+        else:
+            extraction_scope = request.args.get('extraction_scope')
+        async_task = AsyncUpdate(kgu, kg_auto_update=auto_update, extraction_scope=extraction_scope)
         async_task.start()
         return {'message': 'Request submitted. Update is processing...'}, 202
     return {'message': 'An update is already in progress. Check /kgu/updates/status for the status'}, 409
@@ -649,16 +659,17 @@ class AsyncUpdate(threading.Thread):
     When running, the "updating" flag is set to True, preventing another thread of this to be created.
     """
 
-    def __init__(self, kgu, kg_auto_update=None):
+    def __init__(self, kgu, kg_auto_update=None, extraction_scope=None):
         super().__init__()
         self.kgu = kgu
         self.kg_auto_update = kg_auto_update
+        self.extraction_scope = extraction_scope
 
     def run(self):
         global updating
         updating = True
         try:
-            kgu.update_missed_knowledge(kg_auto_update=self.kg_auto_update)
+            kgu.update_missed_knowledge(kg_auto_update=self.kg_auto_update, extraction_scope=self.extraction_scope)
         except Exception as e:
             logger.error(e)
         updating = False

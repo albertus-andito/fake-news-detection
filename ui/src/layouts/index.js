@@ -3,6 +3,7 @@ import { SecurityScanFilled } from '@ant-design/icons';
 import { Outlet } from 'react-router';
 import { Link } from 'react-router-dom';
 const { Header, Content, Footer } = Layout;
+const { SubMenu } =  Menu;
 
 function AppLayout() {
     return (
@@ -17,7 +18,16 @@ function AppLayout() {
 
                     </Menu.Item>
                     <Menu.Item key='/fact-checker'>Fact Checker<Link to='/fact-checker'></Link></Menu.Item>
-                    <Menu.Item key='/knowledge-graph-updater'>Knowledge Graph Updater<Link to='/knowledge-graph-updater'></Link></Menu.Item>
+                    <SubMenu key='kgu-submenu' title="Knowledge Graph Updater">
+                        <Menu.Item key='/article-knowledge'>
+                            Pending Article Knowledge<Link to='/article-knowledge'></Link>
+                        </Menu.Item>
+                        <Menu.Item key='/own-knowledge'>
+                            Add Own Knowledge<Link to='/own-knowledge'></Link>
+                        </Menu.Item>
+                    </SubMenu>
+
+                    <Menu.Item key='/entity-explorer'>Entity Explorer<Link to='/entity-explorer'></Link></Menu.Item>
                 </Menu>
             </Header>
             <Content style={{

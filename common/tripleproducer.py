@@ -6,6 +6,7 @@ from nltk.tokenize import sent_tokenize, word_tokenize
 from spacy.matcher import Matcher
 
 from definitions import ROOT_DIR, LOGGER_CONFIG_PATH
+from kgwrapper import KnowledgeGraphWrapper
 from triple import Triple
 from tripleextractors import StanfordExtractor, IITExtractor
 import json
@@ -45,6 +46,8 @@ class TripleProducer:
         self.extraction_scope = 'named_entities' if extraction_scope is None else extraction_scope
         if self.extraction_scope not in ['named_entities', 'noun_phrases', 'all']:
             raise ValueError("The extraction_scope is unrecognised. Use 'named_entities', 'noun_phrases', or 'all'.")
+
+        self.knowledge_graph = KnowledgeGraphWrapper()
 
         self.nlp = spacy.load('en')
         neuralcoref.add_to_pipe(self.nlp)
@@ -103,6 +106,10 @@ class TripleProducer:
         # map to dbpedia resource (dbpedia spotlight) for Named Entities
         all_triples = self.spot_entities_with_context(document, all_triples)
 
+        # map to dbpedia resource that does not exists locally, not in spotlight
+        # subjects need to be dbpedia resource
+        all_triples = self.spot_local_entities(all_triples)
+
         # link relations using Falcon
         # triples_with_linked_relations = self.link_relations(coref_resolved_sentences, all_triples)
         triples_with_linked_relations = None
@@ -123,14 +130,13 @@ class TripleProducer:
         # remove triples with empty component
         all_triples = self.remove_empty_components(all_triples)
 
-        # Subject needs to be a DBpedia resource/entity
-        all_triples = self.convert_subjects(all_triples)
         self.logger.info(all_triples)
         if len(original_sentences) != len(all_triples):
             self.logger.error("Problem occurred during sentenization! Different lengths of sentences identified.")
             raise Exception("Different length between sentences and triples")
 
-        results = [(sentence, triples) for (sentence, triples) in zip(original_sentences, all_triples) if len(triples) > 0]
+        results = [(sentence, triples) for (sentence, triples) in zip(original_sentences, all_triples) if
+                   len(triples) > 0]
 
         return results
 
@@ -222,9 +228,9 @@ class TripleProducer:
         for sentence in all_triples:
             filtered_triples = []
             for triple in sentence:
-                if triple.subject in in_list: #if any(triple.subject in word or word in triple.subject for word in in_list):
+                if triple.subject in in_list:  # if any(triple.subject in word or word in triple.subject for word in in_list):
                     for obj in triple.objects:
-                        if obj in in_list: #if any(obj in word or word in obj for word in in_list):
+                        if obj in in_list:  # if any(obj in word or word in obj for word in in_list):
                             filtered_triples.append(triple)
                             break
             filtered_triples_sentences.append(filtered_triples)
@@ -264,8 +270,8 @@ class TripleProducer:
         # Do we need to split the sentences first or not? May help with context if not?
         # sentences = sent_tokenize(document)
         response = requests.get(self.SPOTLIGHT_URL,
-                                    params={'text': document},
-                                    headers={'Accept': 'application/json'})
+                                params={'text': document},
+                                headers={'Accept': 'application/json'})
         if response.status_code != 200:
             self.logger.error(response.text)
         try:
@@ -289,6 +295,28 @@ class TripleProducer:
                     triple.subject = self.__find_uri(triple.subject, entities)
                 triple.objects = [entities.get(obj, self.__find_uri(obj, entities)) for obj in triple.objects]
 
+        return all_triples
+
+    def spot_local_entities(self, all_triples):
+        """
+        Prepend all subjects with "http://dbpedia.org/resource/" if the subject hasn't been spotted yet as a DBpedia entity.
+        For objects, check first if such entity exists in the local knowledge graph (may not exist in DBpedia Spotlight KG).
+        If yes, convert the object to the DBpedia resource format.
+        :param all_triples: list of list of triples (top-level list represents sentences)
+        :type all_triples: list
+        :return: list of list of triples, where all subjects are dbpedia resources
+        and objects that exist in the local KG also converted to dbpedia resources
+        :rtype: list
+        """
+        dbpedia = "http://dbpedia.org/resource/"
+        for sentence in all_triples:
+            for triple in sentence:
+                # subject needs to be resource, regardless of its existence
+                if not triple.subject.startswith(dbpedia):
+                    triple.subject = dbpedia + triple.subject.replace(" ", "_")
+                triple.objects = [dbpedia + obj.replace(" ", "_") if not obj.startswith(dbpedia) and
+                                  self.knowledge_graph.check_resource_existence(dbpedia + obj.replace(" ", "_"))
+                                  else obj for obj in triple.objects]
         return all_triples
 
     def __find_uri(self, obj, entities):
@@ -324,8 +352,8 @@ class TripleProducer:
             relations = []
             try:
                 response = requests.post(self.FALCON_URL,
-                                     data='{"text": "%s"}' % self.__fix_encoding(sentence),
-                                     headers={"Content-Type": "application/json"})
+                                         data='{"text": "%s"}' % self.__fix_encoding(sentence),
+                                         headers={"Content-Type": "application/json"})
             except Exception as e:
                 self.logger.error(e)
             if response.status_code != 200:
@@ -341,8 +369,9 @@ class TripleProducer:
                 dbpedia_relations = [rel[0] for rel in relations]
                 raw_relations = [rel[1] for rel in relations]
                 # check triples whose relation is a substring of raw_relation
-                falcon_triples = [Triple(triple.subject, dbpedia_relations[raw_relations.index(triple.relation)], triple.objects)
-                                  for triple in triples if triple.relation in raw_relations]
+                falcon_triples = [
+                    Triple(triple.subject, dbpedia_relations[raw_relations.index(triple.relation)], triple.objects)
+                    for triple in triples if triple.relation in raw_relations]
                 # check triples who have raw_relation as a substring of their relation
                 for i, rel in enumerate(raw_relations):
                     existed_triples = [triple for triple in triples if rel in triple.relation]
@@ -353,11 +382,11 @@ class TripleProducer:
         return new_triples
 
     def __fix_encoding(self, sentence):
-        return sentence.replace('"', '\\"')\
-                       .replace('“', '\\"')\
-                       .replace('”', '\\"')\
-                       .replace('’', '\'')\
-                       .replace('–', '-')
+        return sentence.replace('"', '\\"') \
+            .replace('“', '\\"') \
+            .replace('”', '\\"') \
+            .replace('’', '\'') \
+            .replace('–', '-')
 
     def lemmatise_relations(self, spacy_doc, all_triples):
         """
@@ -419,7 +448,7 @@ class TripleProducer:
         return [[triple for triple in sentence
                  if triple.subject != '' and triple.relation != '' and all(obj != '' for obj in triple.objects)]
                 for sentence in all_triples]
-        
+
     def convert_subjects(self, all_triples):
         """
         Prepend all subjects with "http://dbpedia.org/resource/" if the subject hasn't been spotted yet as a DBpedia entity.
@@ -432,7 +461,7 @@ class TripleProducer:
         for sentence in all_triples:
             for triple in sentence:
                 if not triple.subject.startswith(dbpedia):
-                    triple.subject = dbpedia+triple.subject.replace(" ", "_")
+                    triple.subject = dbpedia + triple.subject.replace(" ", "_")
         return all_triples
 
 

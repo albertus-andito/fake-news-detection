@@ -20,6 +20,23 @@ class KnowledgeGraphWrapper:
         self.sparql = SPARQLWrapper(os.getenv("SPARQL_ENDPOINT"))
         self.logger = logging.getLogger()
 
+    def check_resource_existence(self, resource):
+        query = """
+                PREFIX : <http://dbpedia.org/resource/>
+                ASK WHERE {{
+                  {{ <{0}> ?p ?o . }}
+                  UNION
+                  {{ ?s ?p <{0}> . }}
+                }}
+                """.format(resource)
+        self.sparql.setQuery(query)
+        self.sparql.setReturnFormat(JSON)
+        self.logger.info("Checking resource existence: %s", resource)
+        results = self.sparql.query()
+        if results.response.status != 200:
+            raise Exception("Check resource existence failed with status code " + results.responses.status)
+        return results.convert()["boolean"]
+
     def check_triple_object_existence(self, triple):
         """
         Checks if a triple exists or not in the knowledge graph
@@ -29,6 +46,21 @@ class KnowledgeGraphWrapper:
         :rtype: bool
         """
         exists = [self.check_triple_existence(triple.subject, triple.relation, obj) for obj in triple.objects]
+        return all(exists)
+
+    def check_triple_object_opposite_relation_existence(self, triple):
+        """
+        Checks if a triple with the opposite relation (Objects-Relation-Subject) exists or not in the knowledge graph.
+        :param triple: a triple of type triple.Triple
+        :type triple: triple.Triple
+        :return: True if the opposite relation triple exists, False otherwise
+        :rtype: bool
+        """
+        exists = [self.check_triple_existence(obj, triple.relation, triple.subject) for obj in triple.objects
+                  if obj.startswith("http://dbpedia.org/resource")]
+        if len(exists) == 0:
+            return False
+        # return any(exists) #all or any?
         return all(exists)
 
     def check_triple_existence(self, subject, relation, obj):
@@ -232,3 +264,6 @@ if __name__ == '__main__':
     # wrapper.delete_triple("http://dbpedia.org/resource/Mr_Giuliani", "http://dbpedia.org/ontology/repeat", "unsubstantiated claims")
     # wrapper.delete_triple("http://dbpedia.org/resource/Mr_Giuliani", "http://dbpedia.org/ontology/claim",
     #                       "http://dbpedia.org/resource/Electoral_fraud")
+
+    resource = "http://dbpedia.org/resource/Mr_Giulani"
+    print(wrapper.check_resource_existence(resource))

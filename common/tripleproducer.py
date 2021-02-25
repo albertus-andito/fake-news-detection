@@ -9,6 +9,8 @@ from definitions import ROOT_DIR, LOGGER_CONFIG_PATH
 from kgwrapper import KnowledgeGraphWrapper
 from triple import Triple
 from tripleextractors import StanfordExtractor, IITExtractor
+from utils import convert_to_dbpedia_ontology
+
 import json
 import neuralcoref
 import pprint
@@ -426,23 +428,8 @@ class TripleProducer:
         """
         for sentence in all_triples:
             for triple in sentence:
-                triple.relation = "http://dbpedia.org/ontology/" + self.__camelise(triple.relation).lstrip()
+                triple.relation = convert_to_dbpedia_ontology(triple.relation)
         return all_triples
-
-    def __camelise(self, sentence):
-        """
-        Util function to convert words into camelCase
-        :param sentence: sentence
-        :type sentence: str
-        :return: camelCase words
-        :rtype: str
-        """
-        words = word_tokenize(sentence)
-        if len(words) == 1:
-            return sentence.lower()
-        else:
-            s = "".join(word[0].upper() + word[1:].lower() for word in words)
-            return s[0].lower() + s[1:]
 
     def remove_empty_components(self, all_triples):
         return [[triple for triple in sentence

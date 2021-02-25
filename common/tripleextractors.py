@@ -46,7 +46,8 @@ class StanfordExtractor(TripleExtractor):
     def __init__(self):
         super(StanfordExtractor, self).__init__()
         load_dotenv(dotenv_path=Path('../.env'))
-        self.coreNLP = StanfordCoreNLP(os.getenv("STANFORD_CORE_NLP_PATH"))
+        self.coreNLP = StanfordCoreNLP(os.getenv('STANFORD_CORE_NLP_HOST'),
+                                       port=int(os.getenv('STANFORD_CORE_NLP_PORT')))
 
     def __del__(self):
         self.coreNLP.close()

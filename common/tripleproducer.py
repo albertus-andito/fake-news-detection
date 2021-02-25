@@ -314,7 +314,7 @@ class TripleProducer:
                 # subject needs to be resource, regardless of its existence
                 if not triple.subject.startswith(dbpedia):
                     triple.subject = dbpedia + triple.subject.replace(" ", "_")
-                triple.objects = [dbpedia + obj.replace(" ", "_") if not obj.startswith(dbpedia) and
+                triple.objects = [dbpedia + obj.replace(" ", "_") if obj and not obj.startswith(dbpedia) and
                                   self.knowledge_graph.check_resource_existence(dbpedia + obj.replace(" ", "_"))
                                   else obj for obj in triple.objects]
         return all_triples
@@ -449,36 +449,39 @@ class TripleProducer:
                  if triple.subject != '' and triple.relation != '' and all(obj != '' for obj in triple.objects)]
                 for sentence in all_triples]
 
-    def convert_subjects(self, all_triples):
-        """
-        Prepend all subjects with "http://dbpedia.org/resource/" if the subject hasn't been spotted yet as a DBpedia entity.
-        :param all_triples: list of list of triples (top-level list represents sentences)
-        :type all_triples: list
-        :return: list of list of triples, where all subjects are dbpedia resources
-        :rtype: list
-        """
-        dbpedia = "http://dbpedia.org/resource/"
-        for sentence in all_triples:
-            for triple in sentence:
-                if not triple.subject.startswith(dbpedia):
-                    triple.subject = dbpedia + triple.subject.replace(" ", "_")
-        return all_triples
+    # def convert_subjects(self, all_triples):
+    #     """
+    #     Prepend all subjects with "http://dbpedia.org/resource/" if the subject hasn't been spotted yet as a DBpedia entity.
+    #     :param all_triples: list of list of triples (top-level list represents sentences)
+    #     :type all_triples: list
+    #     :return: list of list of triples, where all subjects are dbpedia resources
+    #     :rtype: list
+    #     """
+    #     dbpedia = "http://dbpedia.org/resource/"
+    #     for sentence in all_triples:
+    #         for triple in sentence:
+    #             if not triple.subject.startswith(dbpedia):
+    #                 triple.subject = dbpedia + triple.subject.replace(" ", "_")
+    #     return all_triples
 
 
 # Testing
 if __name__ == "__main__":
     # iit_producer = TripleProducer(extraction_scope='noun_phrases')
-    # stanford_producer = TripleProducer(extractor_type='stanford_openie', extraction_scope='noun_phrases')
-    iit_producer = TripleProducer(extraction_scope='all')
-    stanford_producer = TripleProducer(extractor_type='stanford_openie', extraction_scope='all')
-    doc_1 = "Barrack Obama was born in Hawaii. He attended school in Jakarta. Mr. Obama was the president of the USA."
+    stanford_producer = TripleProducer(extractor_type='stanford_openie', extraction_scope='noun_phrases')
+    # iit_producer = TripleProducer(extraction_scope='all')
+    # stanford_producer = TripleProducer(extractor_type='stanford_openie', extraction_scope='all')
+    doc_1 = "Barrack Obama was born in Hawaii. He attended school in Jakarta. Mr Obama was the president of the USA. " \
+            "Mr Obama stayed in White House for 8 years."
     # doc_1 = "Barrack Obama was born in Hawaii. Obama lives."
     print(doc_1)
-    print("IIT:")
-    pprint.pprint(iit_producer.produce_triples(doc_1))
+    # print("IIT:")
+    # pprint.pprint(iit_producer.produce_triples(doc_1))
     print("Stanford:")
     pprint.pprint(stanford_producer.produce_triples(doc_1))
 
+    doc = "President Donald Trump's personal lawyer, Rudy Giuliani, has tested positive for Covid-19 and is being treated in hospital.  Mr Giuliani, who has led the Trump campaign's legal challenges to the election results, is the latest person close to the president to be infected.  Since November, he has been on a cross-country tour in an effort to convince state governments to overturn the vote. Like other Trump officials, he has been criticised for shunning face masks. Mr Trump, who was ill with the virus in October, announced the diagnosis in a tweet, writing: \"Get better soon Rudy, we will carry on!\" Mr Giuliani, 76, was admitted to the Medstar Georgetown University Hospital in Washington DC on Sunday. The news came after Mr Giuliani had visited Arizona, Georgia and Michigan all in the past week - where he spoke to government officials while not wearing masks. Following news of Mr Giuliani's diagnosis, the Arizona legislature announced sudden plans to shut down for one week. Several Republican lawmakers there had spent over 10 hours with the former New York mayor last week discussing election results.  Following Mr Giuliani's visit to Phoenix, Arizona, the state's Republican party tweeted a photo of him with other mask-less state lawmakers. In a tweet, Mr Giuliani thanked well-wishers for their messages, and said he was \"recovering quickly\".   His son, Andrew Giuliani, who works at the White House and tested positive for the virus last month, tweeted that his father was \"resting, getting great care and feeling well\".  It is not clear if Mr Giuliani is experiencing symptoms or when he caught the virus.  Nearly 14.6 million people have been infected with Covid-19 in the US, according to Johns Hopkins University, and 281,234 people have died - the highest figures of any country in the world. On Sunday, Dr Deborah Birx, the White House coronavirus task force co-ordinator, criticised the Trump administration for flouting guidelines and peddling \"myths\" about the pandemic.  \"I hear community members parroting back those situations, parroting back that masks don't work, parroting back that we should work towards herd immunity,\" Dr Birx told NBC. \"This is the worst event that this country will face,\" she said. Since the 3 November election, Mr Giuliani has travelled the country as part of unsuccessful efforts to overturn Mr Trump's election defeat. During many of his events, he was seen without a face mask and ignoring social distancing.  Last Wednesday, he appeared at a hearing on alleged election fraud in Michigan where he asked a witness beside him if she would be comfortable removing her face mask. \"I don't want you to do this if you feel uncomfortable, but would you be comfortable taking your mask off, so we can hear you more clearly?\" said Mr Giuliani, who was not wearing a face mask. The witness chose to keep her mask on after asking the panel if she could be heard. On Thursday Mr Giuliani travelled to Georgia where he repeated unsubstantiated claims of voter fraud at a Senate committee hearing about election security.  Dozens of people in Mr Trump's orbit are said to have tested positive for Covid-19 since October.  Boris Epshteyn, another Trump adviser, tested positive shortly after appearing alongside Rudy Giuliani at a news conference on 25 November. Others include the president's chief of staff Mark Meadows and press secretary Kayleigh McEnany, along with his wife Melania and sons Donald Jnr and Baron. Mr Trump's own diagnosis and hospital stay upended his campaign for a second term in office, less than a month before he faced Joe Biden in the presidential election. Mr Trump has refused to concede, insisting without evidence that the election was stolen or rigged. Attorney General William Barr said last week that his department had not seen any evidence of widespread voter fraud that would change the result. Mr Biden will be sworn in as president on 20 January."
+    pprint.pprint(stanford_producer.produce_triples(doc))
     # doc_2 = "Stores and supermarkets in Veracruz (Mexico) will close due to the new coronavirus. The local government " \
     #         "has asked people to buy supplies. "
 

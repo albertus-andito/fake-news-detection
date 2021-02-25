@@ -37,33 +37,39 @@ class KnowledgeGraphWrapper:
             raise Exception("Check resource existence failed with status code " + results.responses.status)
         return results.convert()["boolean"]
 
-    def check_triple_object_existence(self, triple):
+    def check_triple_object_existence(self, triple, transitive=False):
         """
         Checks if a triple exists or not in the knowledge graph
         :param triple: a triple of type triple.Triple
         :type triple: triple.Triple
+        :param transitive: whether a check should also be done for entities that are in the sameAs relation with the subject
+        :type transitive: bool
         :return: True if triple exists, False otherwise
         :rtype: bool
         """
-        exists = [self.check_triple_existence(triple.subject, triple.relation, obj) for obj in triple.objects]
+        exists = [self.check_triple_existence(triple.subject, triple.relation, obj, transitive) for obj in triple.objects]
         return all(exists)
 
-    def check_triple_object_opposite_relation_existence(self, triple):
+    def check_triple_object_opposite_relation_existence(self, triple, transitive=False):
         """
         Checks if a triple with the opposite relation (Objects-Relation-Subject) exists or not in the knowledge graph.
+        To be able to do this, the original Object (which becomes the Subject in this case) needs to be a DBpedia resource/
+        entity. If it is a literal String, then the check is not performed (because Subject always needs to be a resource).
         :param triple: a triple of type triple.Triple
         :type triple: triple.Triple
+        :param transitive: whether a check should also be done for entities that are in the sameAs relation with the subject
+        :type transitive: bool
         :return: True if the opposite relation triple exists, False otherwise
         :rtype: bool
         """
-        exists = [self.check_triple_existence(obj, triple.relation, triple.subject) for obj in triple.objects
+        exists = [self.check_triple_existence(obj, triple.relation, triple.subject, transitive) for obj in triple.objects
                   if obj.startswith("http://dbpedia.org/resource")]
         if len(exists) == 0:
             return False
         # return any(exists) #all or any?
         return all(exists)
 
-    def check_triple_existence(self, subject, relation, obj):
+    def check_triple_existence(self, subject, relation, obj, transitive=False):
         """
         Checks if a triple exists or not in the knowledge graph
         :param subject: triple's subject (must be prepended by "http://dbpedia.org/resource/")
@@ -72,6 +78,8 @@ class KnowledgeGraphWrapper:
         :type relation: str
         :param obj: triple's object
         :type obj: str
+        :param transitive: whether a check should also be done for entities that are in the sameAs relation with the subject
+        :type transitive: bool
         :return: True if triple exists, False otherwise
         :rtype: bool
         """
@@ -86,6 +94,8 @@ class KnowledgeGraphWrapper:
                   <{0}> dbo:{1} {2} .
                 }}
                 """.format(subject, relation.rsplit('/')[-1], obj_query)
+        if transitive:
+            query = "DEFINE input:same-as \"yes\"" + query
         self.sparql.setQuery(query)
         self.sparql.setReturnFormat(JSON)
         self.logger.info("Checking triple existence: %s, %s, %s", subject, relation, obj)
@@ -231,6 +241,33 @@ class KnowledgeGraphWrapper:
         if results.response.status != 200:
             raise Exception("Delete triple failed with status code " + results.responses.status)
 
+    def add_sameAs_relation(self, entity_a, entity_b):
+        """
+        Add a sameAs relation between two entities.
+        :param entity_a: a DBpedia resource/entity (must be prepended by "http://dbpedia.org/resource/")
+        :type entity_a: str
+        :param entity_b: a DBpedia resource/entity (must be prepended by "http://dbpedia.org/resource/")
+        :type entity_b: str
+        """
+        query = """
+                PREFIX owl:<http://www.w3.org/2002/07/owl#>
+                INSERT DATA {{
+                  GRAPH <http://dbpedia.org>
+                  {{
+                    <{0}> owl:sameAs <{1}> .
+                    <{1}> owl:sameAs <{0}> .
+                  }}
+                }}
+                """.format(entity_a, entity_b)
+        self.sparql.setMethod(POST)
+        self.sparql.setQuery(query)
+        self.sparql.setReturnFormat(JSON)
+        self.logger.info("Inserting sameAs relation between: %s, %s, %s", entity_a, entity_b)
+        results = self.sparql.query()
+        if results.response.status != 200:
+            raise Exception("Insert sameAs relation failed with status code " + results.responses.status)
+        pass
+
 
 if __name__ == '__main__':
     wrapper = KnowledgeGraphWrapper()
@@ -249,9 +286,9 @@ if __name__ == '__main__':
     # wrapper.delete_triple("http://dbpedia.org/resource/Albertus_Andito", "http://dbpedia.org/ontology/education",
     #                             "http://dbpedia.org/resource/SD_Aloysius")
 
-    res = wrapper.check_triple_existence("http://dbpedia.org/resource/Albertus_Andito", "http://dbpedia.org/ontology/education",
-                                   "http://dbpedia.org/resource/University_of_Sussex")
-    print(res)
+    # res = wrapper.check_triple_existence("http://dbpedia.org/resource/Albertus_Andito", "http://dbpedia.org/ontology/education",
+    #                                "http://dbpedia.org/resource/University_of_Sussex")
+    # print(res)
 
     # wrapper.insert_triple("http://dbpedia.org/resource/Mr_Giuliani", "http://dbpedia.org/ontology/ignore", "http://dbpedia.org/resource/Social_norms")
 
@@ -267,3 +304,10 @@ if __name__ == '__main__':
 
     resource = "http://dbpedia.org/resource/Mr_Giulani"
     print(wrapper.check_resource_existence(resource))
+
+    wrapper.add_sameAs_relation("http://dbpedia.org/resource/Mr_Giuliani", "http://dbpedia.org/resource/Rudy_Giuliani")
+    print(wrapper.get_entity("http://dbpedia.org/resource/Mr_Giuliani"))
+
+    res = wrapper.check_triple_existence("http://dbpedia.org/resource/Rudy_Giuliani", "http://dbpedia.org/ontology/admit",
+                                   "Sunday", transitive=True)
+    print(res)

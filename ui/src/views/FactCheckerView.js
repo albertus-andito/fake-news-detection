@@ -1,18 +1,18 @@
-import {Button, Card, Form, Input, Radio, Spin, Statistic, Table, Tag, Typography} from 'antd';
+import {Button, Card, Form, Input, Radio, Space, Spin, Statistic, Table, Tag, Typography} from 'antd';
 import React, { useState } from 'react';
 import axios from 'axios';
 import { CheckCircleOutlined } from '@ant-design/icons';
 import TriplesFormInput from '../components/TriplesFormInput';
 
-import { convertToDBpediaLink, convertObjectsToDBpediaLink } from '../utils';
+import {convertToDBpediaLink, convertObjectsToDBpediaLink, convertRelationToDBpediaLink} from '../utils';
 
 const { TextArea } = Input;
 
-function ArticleTextForm({loading, setLoading, setResult}) {
+function ArticleTextForm({loading, setLoading, setResult, algorithm}) {
     const onSubmit = (values) => {
         setLoading(true);
         console.log('Submitted', values);
-        axios.post('/fc/simple/fact-check/', {
+        axios.post(`/fc/${algorithm}/fact-check/`, {
             text: values.text
         })
         .then(function (response) {
@@ -51,7 +51,7 @@ function ArticleTextForm({loading, setLoading, setResult}) {
     );
 }
 
-function TriplesForm({loading, setLoading, setResult}) {
+function TriplesForm({loading, setLoading, setResult, algorithm}) {
     const onSubmit = (values) => {
         setLoading(true);
         console.log('Submitted', values);
@@ -61,7 +61,7 @@ function TriplesForm({loading, setLoading, setResult}) {
             values.triples.forEach(value => {
                 value.objects = [value.objects]
             });
-            axios.post('/fc/simple/fact-check/triples/', values.triples)
+            axios.post(`/fc/${algorithm}/fact-check/triples/`, values.triples)
             .then(function (response) {
                 console.log(response);
                 setLoading(false);
@@ -73,28 +73,38 @@ function TriplesForm({loading, setLoading, setResult}) {
 
     return(
          <Form layout='vertical' onFinish={onSubmit} requiredMark={false} style={{ margin: '24px 0 0 0'}}>
-                <TriplesFormInput />
-                <Form.Item>
-                    <Button type='primary' htmlType='submit' disabled={loading} style={{ width: '100%'}}>
-                        Fact Check
-                    </Button>
-                </Form.Item>
-            </Form>
+             <TriplesFormInput />
+             <Form.Item>
+                 <Button type='primary' htmlType='submit' disabled={loading} style={{ width: '100%'}}>
+                     Fact Check
+                 </Button>
+             </Form.Item>
+         </Form>
     );
 }
 
 function FactCheckerView() {
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState();
+    const [algorithm, setAlgorithm] =  useState('simple');
     const [inputType, setInputType] = useState('text');
+
+    const onAlgorithmChange = (e) => {
+        setAlgorithm(e.target.value);
+    }
 
     const onInputTypeChange = (e) => {
         setInputType(e.target.value);
     }
 
-    const options = [
-        { label: 'Text', value: 'text'},
-        { label: 'Triples', value: 'triples'},
+    const inputTypes = [
+        { label: 'Text', value: 'text' },
+        { label: 'Triples', value: 'triples' },
+    ];
+
+    const algorithms = [
+        { label: 'Simple', value: 'simple'},
+        { label: 'Better', value: 'better'},
     ];
 
     const columns = [
@@ -113,7 +123,7 @@ function FactCheckerView() {
             title: 'Relation',
             dataIndex: ['triple', 'relation'],
             key: 'relation',
-            render: convertToDBpediaLink,
+            render: convertRelationToDBpediaLink,
         },
         {
             title: 'Object',
@@ -134,18 +144,31 @@ function FactCheckerView() {
     return(
         <Card>
             <Typography.Title style={{ textAlign: 'center' }}>Fact Checker</Typography.Title>
+            <Space>
+                Fact Checker Algorithm:
+                <Radio.Group
+                    options={algorithms}
+                    value={algorithm}
+                    onChange={onAlgorithmChange}
+                    optionType='button'
+                    buttonStyle='solid'
+                />
 
-            <Radio.Group
-                options={options}
-                value={inputType}
-                onChange={onInputTypeChange}
-                optionType='button'
-                buttonStyle='solid'
-            />
+                Input Type:
+                <Radio.Group
+                    options={inputTypes}
+                    value={inputType}
+                    onChange={onInputTypeChange}
+                    optionType='button'
+                    buttonStyle='solid'
+                />
+            </Space>
 
-            {inputType === 'text' && <ArticleTextForm loading={loading} setLoading={setLoading} setResult={setResult} />}
+            {inputType === 'text' && <ArticleTextForm loading={loading} setLoading={setLoading} setResult={setResult}
+                                                      algorithm={algorithm} />}
 
-            {inputType === 'triples' && <TriplesForm loading={loading} setLoading={setLoading} setResult={setResult} />}
+            {inputType === 'triples' && <TriplesForm loading={loading} setLoading={setLoading} setResult={setResult}
+                                                     algorithm={algorithm}/>}
 
             <Card>
                 {result && <Typography.Title level={4} style={{ textAlign: 'center' }}>

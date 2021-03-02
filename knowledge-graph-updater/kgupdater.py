@@ -6,6 +6,7 @@ from pathlib import Path
 from pymongo import MongoClient
 
 from definitions import ROOT_DIR, LOGGER_CONFIG_PATH
+from entitycorefresolver import EntityCorefResolver
 from kgwrapper import KnowledgeGraphWrapper
 from triple import Triple
 from tripleproducer import TripleProducer
@@ -41,6 +42,7 @@ class KnowledgeGraphUpdater:
             self.auto_update = False
         else:
             self.auto_update = auto_update
+        self.coref_resolver = EntityCorefResolver()
 
     def update_missed_knowledge(self, kg_auto_update=None, extraction_scope=None):
         """
@@ -92,6 +94,29 @@ class KnowledgeGraphUpdater:
                 if (kg_auto_update is None and self.auto_update) or kg_auto_update:
                     self.logger.info('Inserting non conflicting knowledge for ' + article['source'])
                     self.insert_all_nonconflicting_knowledge(article['source'])
+
+                # Get all DBpedia entities from the article's triples
+                entities = []
+                for sentence in triples:
+                    for triple in sentence['triples']:
+                        entities.append(triple['subject'])
+                        for obj in triple['objects']:
+                            if obj.startswith('http://dbpedia.org/resource/'):
+                                entities.append(obj)
+
+                # Include only corefering entities that exist in the extracted triples
+                coref_clusters = [{'main': main,
+                                   'mentions': [{
+                                       'mention': mention,
+                                       'resolved': self.knowledge_graph.check_sameAs_relation(main, mention)}
+                                       for mention in mentions]}
+                                  for main, mentions in
+                                  self.coref_resolver.get_coref_clusters(article['texts']).items()
+                                  if main in entities]
+                if len(coref_clusters) > 0:
+                    self.db_article_collection.update_one({'source': article['source']},
+                                                          {'$set': {'coref_entities': coref_clusters}})
+
             except Exception as e:
                 self.logger.error("Exception occured when extracting article " + article['source'] + ": " + e.__str__())
 
@@ -195,7 +220,7 @@ class KnowledgeGraphUpdater:
                                                                      {'subject': triple['subject'],
                                                                       'relation': triple['relation'],
                                                                       'objects': triple['objects']}}},
-                                                            array_filters=[{'sentence.sentence': sentence['sentence']}])
+                                                      array_filters=[{'sentence.sentence': sentence['sentence']}])
                 self.db_article_collection.update_one({'source': article_url},
                                                       {'$pull': {'conflicts':
                                                           {'toBeInserted': {
@@ -279,6 +304,34 @@ class KnowledgeGraphUpdater:
                 'conflicts': article['conflicts']
             })
         return articles
+
+    def get_all_unresolved_corefering_entities(self):
+        """
+        Returns all unresolved corefering entities extracted from articles.
+        :return: list of unresolved corefering entities
+        :rtype: list
+        """
+        articles = []
+        for article in self.db_article_collection.find({'coref_entities': {'$exists': True}}):
+            entities = [{'main': ent['main'],
+                         'mentions': [mention for mention in ent['mentions'] if mention['resolved'] is False]}
+                        for ent in article['coref_entities']]
+            entities = [ent for ent in entities if len(ent['mentions']) > 0]
+            articles.append({
+                'source': article['source'],
+                'coref_entities': entities
+            })
+        return articles
+
+    def insert_entities_equality(self, entity_a, entity_b):
+        """
+        Resolve two entities as the same.
+        :param entity_a: a DBpedia resource/entity (must be prepended by "http://dbpedia.org/resource/")
+        :type entity_a: str
+        :param entity_b: a DBpedia resource/entity (must be prepended by "http://dbpedia.org/resource/")
+        :type entity_b: str
+        """
+        self.knowledge_graph.add_sameAs_relation(entity_a, entity_b)
 
     def insert_articles_knowledge(self, articles_triples):
         """

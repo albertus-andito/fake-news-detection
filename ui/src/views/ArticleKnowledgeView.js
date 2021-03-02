@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import axios from "axios";
 import {convertObjectsToDBpediaLink, convertToDBpediaLink} from "../utils";
 import {ExclamationCircleOutlined} from "@ant-design/icons";
+import showErrorModal from "../components/ShowErrorModal";
 
 const { confirm } = Modal;
 
@@ -79,21 +80,6 @@ function PendingTriplesTable({ pendingTriples, conflictedTriples, getPendingTrip
     const rowSelection = {
         selectedRowKeys: selectedRowKeys,
         onChange: onSelectChange,
-    }
-
-    // TODO: move this to util components
-    const showErrorModal = (message) => {
-        Modal.error({
-            title: 'Error!',
-            content: (
-                <div>
-                    {message}
-                </div>
-            ),
-            onOk() {
-                Modal.destroyAll();
-            }
-        });
     }
 
     const showAddModal = () => {
@@ -232,7 +218,39 @@ function PendingTriplesTable({ pendingTriples, conflictedTriples, getPendingTrip
             />
         </>
     );
-;}
+}
+
+function UnresolvedCorefEntitiesTable({coreferingEntities}) {
+    const columns = [
+        {
+            title: 'Source',
+            dataIndex: 'source',
+            key: 'source',
+            render: (text) => <a href={text}>{text}</a>,
+        },
+        {
+            title: 'Main Entity',
+            dataIndex: 'main',
+            key: 'main',
+            render: convertToDBpediaLink,
+        },
+        {
+            title: 'Corefering Entity',
+            dataIndex: 'mention',
+            key: 'mention',
+            render: convertToDBpediaLink,
+        }
+    ];
+
+    return(
+      <Table
+          dataSource={coreferingEntities}
+          columns={columns}
+          scroll={{x: true}}
+      />
+
+    );
+}
 
 function ArticleKnowledgeView() {
     const [pendingTriples, setPendingTriples] = useState();
@@ -240,7 +258,7 @@ function ArticleKnowledgeView() {
     const [isUpdating, setIsUpdating] = useState(false);
     const [autoAdd, setAutoAdd] = useState(false);
     const [extractionScope, setExtractionScope] = useState('noun_phrases')
-
+    // const [coreferingEntities, setCoreferingEntities] = useState();
 
 
     const getPendingTriples = () => {
@@ -268,6 +286,22 @@ function ArticleKnowledgeView() {
         });
     };
 
+    // const getUnresolvedCorefEntities = () => {
+    //     axios.get('/kgu/article-triples/corefering-entities/')
+    //     .then(function(response) {
+    //         console.log(response);
+    //         let data = [];
+    //         response.data.all_coref_entities.forEach((article) => {
+    //             article.coref_entities.forEach((entity) => {
+    //                 entity.mentions.forEach((mention) => {
+    //                     data.push({source: article.source, main: entity.main, mention: mention.mention});
+    //                 })
+    //             })
+    //         })
+    //         setCoreferingEntities(data);
+    //     })
+    // }
+
     const onUpdateClick = () => {
         axios.get('/kgu/updates', {
             params: {
@@ -285,6 +319,7 @@ function ArticleKnowledgeView() {
                     setIsUpdating(false);
                     getPendingTriples();
                     getConflictedTriples();
+                    // getUnresolvedCorefEntities();
                     return clearInterval(status)
                 }
             })
@@ -316,11 +351,14 @@ function ArticleKnowledgeView() {
     useEffect(() => {
         getPendingTriples();
         getConflictedTriples();
+        // getUnresolvedCorefEntities();
     }, []);
 
     return(
         <Card style={{ textAlign: 'center'}}>
             <Typography.Title style={{ textAlign: 'center' }}>Knowledge Graph Updater</Typography.Title>
+            <Typography.Title level={2} style={{ textAlign: 'center' }}>Article Knowledge</Typography.Title>
+
             <Divider>Update Triple Extraction from Articles</Divider>
             <Typography style={{ textAlign: 'center' }}>
                 Trigger an update so that triples are extracted from the scraped news articles.
@@ -351,6 +389,13 @@ function ArticleKnowledgeView() {
                     Update
                 </Button>
             </Space>
+
+            {/*<Divider>Unresolved Corefering Entities</Divider>*/}
+            {/*<Typography style={{ textAlign: 'center' }}>*/}
+            {/*    Corefering entities that are found in the articles. Resolve them if they are indeed the same entity.*/}
+            {/*</Typography>*/}
+            {/*<UnresolvedCorefEntitiesTable coreferingEntities={coreferingEntities}/>*/}
+
             <Divider>Pending Triples</Divider>
             <Typography style={{ textAlign: 'center' }}>
                 Triples to be added to the knowledge graph.

@@ -73,13 +73,13 @@ function TriplesForm({loading, setLoading, setResult, algorithm}) {
 
     return(
          <Form layout='vertical' onFinish={onSubmit} requiredMark={false} style={{ margin: '24px 0 0 0'}}>
-                <TriplesFormInput />
-                <Form.Item>
-                    <Button type='primary' htmlType='submit' disabled={loading} style={{ width: '100%'}}>
-                        Fact Check
-                    </Button>
-                </Form.Item>
-            </Form>
+             <TriplesFormInput />
+             <Form.Item>
+                 <Button type='primary' htmlType='submit' disabled={loading} style={{ width: '100%'}}>
+                     Fact Check
+                 </Button>
+             </Form.Item>
+         </Form>
     );
 }
 

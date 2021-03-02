@@ -141,6 +141,7 @@ class KnowledgeGraphWrapper:
         if not subject.startswith("http://dbpedia.org/resource"):
             subject = "http://dbpedia.org/resource/" + subject
         query = """
+                DEFINE input:same-as \"yes\"
                 PREFIX : <http://dbpedia.org/resource/>
                 SELECT ?r ?o WHERE{{
                 <{0}> ?r ?o .
@@ -262,12 +263,59 @@ class KnowledgeGraphWrapper:
         self.sparql.setMethod(POST)
         self.sparql.setQuery(query)
         self.sparql.setReturnFormat(JSON)
-        self.logger.info("Inserting sameAs relation between: %s, %s, %s", entity_a, entity_b)
+        self.logger.info("Inserting sameAs relation between: %s, %s", entity_a, entity_b)
         results = self.sparql.query()
         if results.response.status != 200:
             raise Exception("Insert sameAs relation failed with status code " + results.responses.status)
-        pass
 
+    def remove_sameAs_relation(self, entity_a, entity_b):
+        """
+        Remove the sameAs relation between two entities.
+        :param entity_a: a DBpedia resource/entity (must be prepended by "http://dbpedia.org/resource/")
+        :type entity_a: str
+        :param entity_b: a DBpedia resource/entity (must be prepended by "http://dbpedia.org/resource/")
+        :type entity_b: str
+        """
+        query = """
+                PREFIX owl:<http://www.w3.org/2002/07/owl#>
+                DELETE DATA {{
+                  GRAPH <http://dbpedia.org>
+                  {{
+                    <{0}> owl:sameAs <{1}> .
+                    <{1}> owl:sameAs <{0}> .
+                  }}
+                }}
+                """.format(entity_a, entity_b)
+        self.sparql.setMethod(POST)
+        self.sparql.setQuery(query)
+        self.sparql.setReturnFormat(JSON)
+        self.logger.info("Removing sameAs relation between: %s, %s", entity_a, entity_b)
+        results = self.sparql.query()
+        if results.response.status != 200:
+            raise Exception("Removing sameAs relation failed with status code " + results.responses.status)
+
+    def check_sameAs_relation(self, entity_a, entity_b):
+        """
+        Check the sameAs relation existence between two entities.
+        :param entity_a: a DBpedia resource/entity (must be prepended by "http://dbpedia.org/resource/")
+        :type entity_a: str
+        :param entity_b: a DBpedia resource/entity (must be prepended by "http://dbpedia.org/resource/")
+        :type entity_b: str
+        """
+        query = """
+                PREFIX owl:<http://www.w3.org/2002/07/owl#>
+                ASK {{
+                  <{0}> owl:sameAs <{1}> .
+                  <{1}> owl:sameAs <{0}> .
+                }}
+                """.format(entity_a, entity_b)
+        self.sparql.setQuery(query)
+        self.sparql.setReturnFormat(JSON)
+        self.logger.info("Checking sameAs relation existence between: %s, %s", entity_a, entity_b)
+        results = self.sparql.query()
+        if results.response.status != 200:
+            raise Exception("Check sameAs relation existence failed with status code " + results.responses.status)
+        return results.convert()["boolean"]
 
 if __name__ == '__main__':
     wrapper = KnowledgeGraphWrapper()
@@ -311,3 +359,9 @@ if __name__ == '__main__':
     res = wrapper.check_triple_existence("http://dbpedia.org/resource/Rudy_Giuliani", "http://dbpedia.org/ontology/admit",
                                    "Sunday", transitive=True)
     print(res)
+
+    res = wrapper.check_sameAs_relation("http://dbpedia.org/resource/Rudy_Giuliani", "http://dbpedia.org/resource/Mr_Giuliani")
+    print(res)
+
+    wrapper.remove_sameAs_relation("http://dbpedia.org/resource/Mr_Giuliani", "http://dbpedia.org/resource/Rudy_Giuliani")
+    print(wrapper.get_entity("http://dbpedia.org/resource/Mr_Giuliani"))

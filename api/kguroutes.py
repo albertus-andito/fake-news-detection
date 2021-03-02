@@ -91,6 +91,47 @@ def trigger_updates():
     return {'message': 'An update is already in progress. Check /kgu/updates/status for the status'}, 409
 
 
+@kgu_api.route('/article-triples/corefering-entities/')
+def unresolved_corefering_entities():
+    """
+    Returns all unresolved corefering entities from all scraped articles.
+    ---
+    tags:
+      - Knowledge Graph Updater (Articles)
+    responses:
+      200:
+        description: Corefering entities of all articles returned successfully
+        schema:
+          id: all_coref_entities
+          type: object
+          properties:
+            all_coref_entities:
+              type: array
+              items:
+                type: object
+                properties:
+                  source:
+                    type: str
+                  coref_entities:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        main:
+                          type: str
+                        mentions:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              mention:
+                                type: str
+                              resolved:
+                                type: boolean
+
+    """
+    return {'all_coref_entities': kgu.get_all_unresolved_corefering_entities()}, 200
+
 @kgu_api.route('/article-triples/insert/', methods=['POST'])
 def insert_article_triples():
     """
@@ -650,6 +691,37 @@ def get_entity(subject):
     triples = [triple.to_dict() for triple in kgu.get_entity(subject)]
     return {'triples': triples}, 200
 
+
+@kgu_api.route('/entity/equals/', methods=['POST'])
+def resolve_entity_equality():
+    """
+    Resolve two entities as the same.
+    ---
+    tags:
+      - Knowledge Graph Updater
+    consumes:
+      - application/json
+    parameters:
+      - in: body
+        name: two_entities
+        schema:
+          id: two_entities
+          type: object
+          properties:
+            entity_a:
+              type: string
+            entity_b:
+              type: string
+        required: true
+    responses:
+      200:
+        description: Triples were inserted successfully.
+        schema:
+          id: standard_message
+    """
+    data = request.get_json()
+    kgu.insert_entities_equality(data['entity_a'], data['entity_b'])
+    return {'message': 'Entities have been added as the same.'}, 200
 
 class AsyncUpdate(threading.Thread):
     """

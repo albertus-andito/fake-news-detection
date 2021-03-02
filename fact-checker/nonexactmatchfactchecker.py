@@ -6,9 +6,9 @@ from triple import Triple
 from utils import convert_to_dbpedia_ontology
 
 
-class BetterFactChecker(FactChecker):
+class NonExactMatchFactChecker(FactChecker):
     """
-    A Better Fact Checker, compared to the Simple Fact Checker.
+    A Non Exact Match Fact Checker.
     It considers the opposite relation (Object-Relation-Triple) of every triple.
     It also considers the synonyms of the relation, at the moment using WordNet.
     """
@@ -93,12 +93,11 @@ class BetterFactChecker(FactChecker):
 
         for triple in triples:
             # check original triple
-            original_exists = self.knowledge_graph.check_triple_object_existence(triple, transitive=True)
+            original_exists = self.knowledge_graph.check_triple_object_existence(triple)
             if original_exists is True:
                 return [(triple, original_exists)]
             # check triple with opposite relation (Object - Relation - Subject)
-            opposite_exists = self.knowledge_graph.check_triple_object_opposite_relation_existence(triple,
-                                                                                                   transitive=True)
+            opposite_exists = self.knowledge_graph.check_triple_object_opposite_relation_existence(triple)
             opposite_triple = Triple(triple.subject, 'is ' + triple.relation + ' of', triple.objects)
             if opposite_exists is True:
                 return [(opposite_triple, opposite_exists)]
@@ -126,19 +125,18 @@ class BetterFactChecker(FactChecker):
                 if lemma.name() != relation:
                     dbpedia_lemma = convert_to_dbpedia_ontology(lemma.name())
                     synonym_triple = Triple(triple.subject, dbpedia_lemma, triple.objects)
-                    exists = self.knowledge_graph.check_triple_object_existence(synonym_triple, transitive=True)
+                    exists = self.knowledge_graph.check_triple_object_existence(synonym_triple)
                     if exists:
                         return synonym_triple, exists
                     opposite_exists = self.knowledge_graph.check_triple_object_opposite_relation_existence(
-                        synonym_triple,
-                        transitive=True)
+                        synonym_triple)
                     if opposite_exists:
                         return Triple(triple.subject, 'is ' + dbpedia_lemma + ' of', triple.objects), opposite_exists
 
 
 import pprint
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
     # fc = BetterFactChecker()
     # triple = Triple("http://dbpedia.org/resource/Social_distancing", "http://dbpedia.org/ontology/ignore",
     #                 ["http://dbpedia.org/resource/Mr_Giuliani"])
@@ -153,12 +151,12 @@ if __name__ == '__main__':
     # print(sum(a_dict.values()))
     # print(all([]))
 
-    synsets = (wn.synsets('neglect', pos=wn.VERB))
-    print(synsets)
-    for synset in synsets:
-        print('LEMMAS:')
-        for lemma in synset.lemmas():
-            print(lemma.name())
+    # synsets = (wn.synsets('neglect', pos=wn.VERB))
+    # print(synsets)
+    # for synset in synsets:
+    #     print('LEMMAS:')
+    #     for lemma in synset.lemmas():
+    #         print(lemma.name())
         # print('HYPERNYMS:')
         # for hypernym in synset.hypernyms():
         #     print(hypernym.name())

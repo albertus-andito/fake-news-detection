@@ -1,9 +1,9 @@
 from factchecker import FactChecker
 
 
-class SimpleFactChecker(FactChecker):
+class ExactMatchFactChecker(FactChecker):
     """
-    A Simple Fact Checker, where a truthfulness is decided only by finding the exact match of the triples.
+    An Exact Match Fact Checker, where a truthfulness is decided only by finding the exact match of the triples.
     """
     def fact_check(self, article):
         """
@@ -38,7 +38,7 @@ class SimpleFactChecker(FactChecker):
 
 import pprint
 if __name__ == '__main__':
-    fc = SimpleFactChecker()
+    fc = ExactMatchFactChecker()
     text = 'Mr Giuliani ignored social distancing. He also claimed electoral fraud. He studied sociology.'
     triples = fc.get_triples(text)
     pprint.pprint(triples)

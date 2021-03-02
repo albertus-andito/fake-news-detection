@@ -1,13 +1,13 @@
 from flask import Blueprint, request
 
-from betterfactchecker import BetterFactChecker
-from simplefactchecker import SimpleFactChecker
+from nonexactmatchfactchecker import NonExactMatchFactChecker
+from exactmatchfactchecker import ExactMatchFactChecker
 from triple import Triple
 
 fc_api = Blueprint('fc_api', __name__)
 
-simple_fact_checker = SimpleFactChecker()
-better_fact_checker = BetterFactChecker()
+simple_fact_checker = ExactMatchFactChecker()
+better_fact_checker = NonExactMatchFactChecker()
 
 @fc_api.route('/')
 def hello_world():

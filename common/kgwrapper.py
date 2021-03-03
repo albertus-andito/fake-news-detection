@@ -104,13 +104,15 @@ class KnowledgeGraphWrapper:
             raise Exception("Check triple existence failed with status code " + results.responses.status)
         return results.convert()["boolean"]
 
-    def get_triples(self, subject, relation):
+    def get_triples(self, subject, relation, transitive=False):
         """
         Get triples from Knowledge Graph that have the given subject and relation.
         :param subject: triple's subject (must be prepended by "http://dbpedia.org/resource/")
         :type subject: str
         :param relation: triple's relation (must be prepended by "http://dbpedia.org/ontology/")
         :return: list of triples (triple.Triple) that exist in the knowledge graph, or None if such triple doesn't exist
+        :param transitive: whether a check should also be done for entities that are in the sameAs relation with the subject
+        :type transitive: bool
         :rtype: list or None
         """
         query = """
@@ -119,6 +121,8 @@ class KnowledgeGraphWrapper:
                 <{0}> dbo:{1} ?o .
                 }}
                 """.format(subject, relation.rsplit('/')[-1])
+        if transitive:
+            query = "DEFINE input:same-as \"yes\"" + query
         self.sparql.setQuery(query)
         self.sparql.setReturnFormat(JSON)
         self.logger.info("Getting triples: %s, %s", subject, relation)
@@ -130,11 +134,13 @@ class KnowledgeGraphWrapper:
             return [Triple(subject, relation, [res["o"]["value"]]) for res in results["results"]["bindings"]]
         return None
 
-    def get_entity(self, subject):
+    def get_entity(self, subject, transitive=False):
         """
         Get all triples that the subject or entity has in the knowledge graphs.
         :param subject: triple's subject
         :type subject: str
+        :param transitive: whether a check should also be done for entities that are in the sameAs relation with the subject
+        :type transitive: bool
         :return: list of all triples that the subject has in the knowledge graph, or None if the subject doesn't exist
         :rtype: list or None
         """
@@ -147,6 +153,8 @@ class KnowledgeGraphWrapper:
                 <{0}> ?r ?o .
                 }}
                 """.format(subject)
+        if transitive:
+            query = "DEFINE input:same-as \"yes\"" + query
         self.sparql.setQuery(query)
         self.sparql.setReturnFormat(JSON)
         self.logger.info("Getting entity: %s,", subject)

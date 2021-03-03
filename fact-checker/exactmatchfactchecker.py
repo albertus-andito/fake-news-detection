@@ -16,11 +16,11 @@ class ExactMatchFactChecker(FactChecker):
         :rtype: tuple
         """
         article_triples = self.get_triples(article)
-        fc_result = [(sentence, {triple: self.knowledge_graph.check_triple_object_existence(triple)
+        fc_result = [(sentence, {triple: self.exact_fact_check(triple)
                       for triple in triples}) for (sentence, triples) in article_triples]
-        truth_values = [val for sentence, triples in fc_result for val in triples.values()]
-        truthfulness = sum(truth_values) / len(truth_values)
-        return fc_result, truthfulness
+        # truth_values = [val for sentence, triples in fc_result for val in triples.values()]
+        # truthfulness = sum(truth_values) / len(truth_values) if len(fc_result) > 0 else 0
+        return fc_result
 
     def fact_check_triples(self, triples):
         """
@@ -31,10 +31,19 @@ class ExactMatchFactChecker(FactChecker):
         :return: a tuple of fact check result (triples and their existence) and the truthfulness score
         :rtype: tuple
         """
-        fc_result = {triple: self.knowledge_graph.check_triple_object_existence(triple) for triple in triples}
-        truthfulness = sum(fc_result.values()) / len(fc_result) if len(fc_result) > 0 else 0
+        fc_result = {triple: self.exact_fact_check(triple) for triple in triples}
+        # truthfulness = sum(fc_result.values()) / len(fc_result) if len(fc_result) > 0 else 0
         # what to return here?
-        return fc_result, truthfulness
+        return fc_result
+
+    def exact_fact_check(self, triple):
+        exists = self.knowledge_graph.check_triple_object_existence(triple)
+        if exists is True:
+            return 'exists', []
+        conflicts = self.knowledge_graph.get_triples(triple.subject, triple.relation)
+        if conflicts is not None:
+            return 'conflicts', conflicts
+        return 'none', []
 
 import pprint
 if __name__ == '__main__':

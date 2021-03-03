@@ -1,32 +1,11 @@
 import {Button, Card, Divider, Modal, Popover, Radio, Space, Switch, Table, Tag, Typography} from "antd";
 import React, { useState, useEffect } from 'react';
 import axios from "axios";
-import {convertObjectsToDBpediaLink, convertToDBpediaLink} from "../utils";
+import {convertObjectsToDBpediaLink, convertToDBpediaLink, tripleColumns} from "../utils";
 import {ExclamationCircleOutlined} from "@ant-design/icons";
 import showErrorModal from "../components/ShowErrorModal";
 
 const { confirm } = Modal;
-
-const tripleColumns = [
-    {
-        title: 'Subject',
-        dataIndex: 'subject',
-        key: 'subject',
-        render: convertToDBpediaLink,
-    },
-    {
-        title: 'Relation',
-        dataIndex: 'relation',
-        key: 'relation',
-        render: convertToDBpediaLink,
-    },
-    {
-        title: 'Object',
-        dataIndex: 'objects',
-        key: 'object',
-        render: convertObjectsToDBpediaLink,
-    },
-];
 
 function arrayEquals(a, b) {
     return Array.isArray(a) &&

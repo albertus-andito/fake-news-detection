@@ -179,11 +179,44 @@ class GuardianScraper(ArticleScraper):
         return {'source': url}
 
 
-if __name__ == '__main__':
-    bbc = BbcScraper()
-    independent = IndependentScraper()
-    guardian = GuardianScraper()
+class GenericScraper(ArticleScraper):
+    """
+    Scraper for a generic website.
+    """
+    def scrape(self, url):
+        """
+        Scrapes text from <p> tags of the webpage.
+        :param url: url
+        :type url: str
+        :return: Dictionary of article in the format of {'headlines':..., 'date':..., 'text':..., 'source':...}
+        :rtype: dict
+        """
+        session = HTMLSession()
+        page = session.get(url)
+        soup = BeautifulSoup(page.content, 'html.parser')
+        ps = soup.find_all('p')
+        text = ''
+        for p in ps:
+            text += p.getText()
+        return {
+            'headlines': '',
+            'date': '',
+            'texts': text,
+            'source': url
+        }
 
-    bbc.execute("https://www.bbc.co.uk/news/world-us-canada-55210243")
-    independent.execute("https://www.independent.co.uk/news/science/archaeology/oxford-archaeology-dig-skeleton-hertfordshire-b1767027.html")
-    guardian.execute("https://www.theguardian.com/business/2020/dec/15/barclays-fined-fca-covid-crisis")
+
+
+
+if __name__ == '__main__':
+    # bbc = BbcScraper()
+    # independent = IndependentScraper()
+    # guardian = GuardianScraper()
+    #
+    # bbc.execute("https://www.bbc.co.uk/news/world-us-canada-55210243")
+    # independent.execute("https://www.independent.co.uk/news/science/archaeology/oxford-archaeology-dig-skeleton-hertfordshire-b1767027.html")
+    # guardian.execute("https://www.theguardian.com/business/2020/dec/15/barclays-fined-fca-covid-crisis")
+
+    generic = GenericScraper()
+    res = generic.scrape('https://news.sky.com/story/recommended-1-pay-rise-for-nhs-staff-labelled-pitiful-by-nursing-union-12235986')
+    print(res)

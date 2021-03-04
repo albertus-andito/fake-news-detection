@@ -25,6 +25,30 @@ import showErrorModal from "../components/ShowErrorModal";
 const { TextArea } = Input;
 const { confirm } = Modal;
 
+function handleFactCheckResponse(response, setLoading, setExactMatch, setPossibleMatch, setConflict, setUnknown) {
+    console.log(response);
+    setLoading(false);
+    const [exactMatch, possibleMatch, conflict, unknown] = [[],[],[],[]];
+    response.data.triples.forEach((sentence) => {
+        sentence.triples.forEach((triple) => {
+            const pushed = {sentence: sentence.sentence, triple: triple.triple, result: triple.result};
+            if (triple.result === 'exists') {
+                exactMatch.push({...pushed});
+            } else if (triple.result === 'conflicts') {
+                conflict.push({...pushed, other_triples: triple.other_triples});
+            } else if (triple.result === 'possible') {
+                possibleMatch.push({...pushed, other_triples: triple.other_triples});
+            } else if (triple.result === 'none') {
+                unknown.push({...pushed});
+            }
+        })
+    })
+    setExactMatch(exactMatch);
+    setConflict(conflict);
+    setPossibleMatch(possibleMatch);
+    setUnknown(unknown);
+}
+
 function ArticleTextForm({loading, setLoading, algorithm, setExactMatch, setPossibleMatch, setConflict, setUnknown}) {
     const onSubmit = (values) => {
         setLoading(true);
@@ -33,27 +57,7 @@ function ArticleTextForm({loading, setLoading, algorithm, setExactMatch, setPoss
             text: values.text
         })
         .then(function (response) {
-            console.log(response);
-            setLoading(false);
-            const [exactMatch, possibleMatch, conflict, unknown] = [[],[],[],[]];
-            response.data.triples.forEach((sentence) => {
-                sentence.triples.forEach((triple) => {
-                    const pushed = {sentence: sentence.sentence, triple: triple.triple, result: triple.result};
-                    if (triple.result === 'exists') {
-                        exactMatch.push({...pushed});
-                    } else if (triple.result === 'conflicts') {
-                        conflict.push({...pushed, other_triples: triple.other_triples});
-                    } else if (triple.result === 'possible') {
-                        possibleMatch.push({...pushed, other_triples: triple.other_triples});
-                    } else if (triple.result === 'none') {
-                        unknown.push({...pushed});
-                    }
-                })
-            })
-            setExactMatch(exactMatch);
-            setConflict(conflict);
-            setPossibleMatch(possibleMatch);
-            setUnknown(unknown);
+            handleFactCheckResponse(response, setLoading, setExactMatch, setPossibleMatch, setConflict, setUnknown);
         })
     }
 
@@ -65,7 +69,7 @@ function ArticleTextForm({loading, setLoading, algorithm, setExactMatch, setPoss
                 rules={[
                     {
                         required: true,
-                        message: 'Please input the fake news text!',
+                        message: 'Please input the text!',
                     }
                 ]}
             >
@@ -125,6 +129,41 @@ function TriplesForm({loading, setLoading, algorithm, setExactMatch, setPossible
                      Fact Check
                  </Button>
              </Form.Item>
+         </Form>
+    );
+}
+
+function URLForm({ loading, setLoading, algorithm, setExactMatch, setConflict, setPossibleMatch, setUnknown }) {
+    const onSubmit = (values) => {
+        setLoading(true);
+        console.log('Submitted', values);
+        axios.post(`/fc/${algorithm}/fact-check/url/`, {
+            url: values.url
+        })
+        .then(function (response) {
+            handleFactCheckResponse(response, setLoading, setExactMatch, setPossibleMatch, setConflict, setUnknown);
+        })
+    }
+
+    return(
+         <Form layout='vertical' onFinish={onSubmit} requiredMark={false} style={{ margin: '24px 0 0 0'}}>
+            <Form.Item
+                label='Article URL'
+                name='url'
+                rules={[
+                    {
+                        required: true,
+                        message: 'Please input the article url!',
+                    }
+                ]}
+            >
+                <Input disabled={loading}/>
+            </Form.Item>
+            <Form.Item>
+                <Button type='primary' htmlType='submit' disabled={loading} style={{ width: '100%'}}>
+                    Fact Check
+                </Button>
+            </Form.Item>
          </Form>
     );
 }
@@ -316,6 +355,7 @@ function FactCheckerView() {
     const inputTypes = [
         { label: 'Text', value: 'text' },
         { label: 'Triples', value: 'triples' },
+        { label: 'URL', value: 'url'},
     ];
 
     const algorithms = [
@@ -402,6 +442,10 @@ function FactCheckerView() {
             {inputType === 'triples' && <TriplesForm loading={loading} setLoading={setLoading} algorithm={algorithm}
                                                      setExactMatch={setExactMatch} setPossibleMatch={setPossibleMatch}
                                                      setConflict={setConflict} setUnknown={setUnknown}/>}
+
+            {inputType === 'url' && <URLForm loading={loading} setLoading={setLoading} algorithm={algorithm}
+                                             setExactMatch={setExactMatch} setPossibleMatch={setPossibleMatch}
+                                             setConflict={setConflict} setUnknown={setUnknown}/>}
 
             <Card>
                 {(exactMatch.length > 0 || possibleMatch.length > 0 || conflict.length > 0 || unknown.length > 0) &&

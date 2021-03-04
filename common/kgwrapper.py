@@ -125,13 +125,33 @@ class KnowledgeGraphWrapper:
             query = "DEFINE input:same-as \"yes\"" + query
         self.sparql.setQuery(query)
         self.sparql.setReturnFormat(JSON)
-        self.logger.info("Getting triples: %s, %s", subject, relation)
+        self.logger.info("Getting triples given relation: %s, %s", subject, relation)
         results = self.sparql.query()
         if results.response.status != 200:
-            raise Exception("Get entity failed with status code " + results.responses.status)
+            raise Exception("Get triples given relation failed with status code " + results.responses.status)
         results = results.convert()
         if len(results["results"]["bindings"]) > 0:
             return [Triple(subject, relation, [res["o"]["value"]]) for res in results["results"]["bindings"]]
+        return None
+
+    def get_relation_triples(self, subject, obj, transitive=False):
+        query = """
+                PREFIX : <http://dbpedia.org/resource/>
+                SELECT ?p WHERE{{
+                <{0}> ?p <{1}> .
+                }}
+                """.format(subject, obj)
+        if transitive:
+            query = "DEFINE input:same-as \"yes\"" + query
+        self.sparql.setQuery(query)
+        self.sparql.setReturnFormat(JSON)
+        self.logger.info("Getting triples: %s, %s", subject, obj)
+        results = self.sparql.query()
+        if results.response.status != 200:
+            raise Exception("Get triples failed with status code " + results.responses.status)
+        results = results.convert()
+        if len(results["results"]["bindings"]) > 0:
+            return [Triple(subject, res["p"]["value"], [obj]) for res in results["results"]["bindings"]]
         return None
 
     def get_entity(self, subject, transitive=False):
@@ -147,7 +167,6 @@ class KnowledgeGraphWrapper:
         if not subject.startswith("http://dbpedia.org/resource"):
             subject = "http://dbpedia.org/resource/" + subject
         query = """
-                DEFINE input:same-as \"yes\"
                 PREFIX : <http://dbpedia.org/resource/>
                 SELECT ?r ?o WHERE{{
                 <{0}> ?r ?o .
@@ -208,14 +227,20 @@ class KnowledgeGraphWrapper:
         if results.response.status != 200:
             raise Exception("Insert triple failed with status code " + results.responses.status)
 
-    def delete_triple_object(self, triple):
+    def delete_triple_object(self, triple, transitive=False):
         """
         Deletes triple from the knowledge graph.
         :param triple: a triple of type triple.Triple
         :type triple: triple.Triple
+        :param transitive: whether the delete should also be done for entities that are in the sameAs relation with the subject
+        :type transitive: bool
         """
         for obj in triple.objects:
             self.delete_triple(triple.subject, triple.relation, obj)
+        if transitive is True:
+            same_entities = self.get_same_entities(triple.subject)
+            for ent in same_entities:
+                self.delete_triple(ent, triple.relation, obj)
 
     def delete_triple(self, subject, relation, obj):
         """
@@ -249,6 +274,32 @@ class KnowledgeGraphWrapper:
         results = self.sparql.query()
         if results.response.status != 200:
             raise Exception("Delete triple failed with status code " + results.responses.status)
+
+    def get_same_entities(self, entity):
+        """
+        Return DBpedia entities that have the owl:sameAs relation with the input.
+        They should be considered as the same entity.
+        :param entity: a DBpedia resource/entity (must be prepended by "http://dbpedia.org/resource/")
+        :type entity: str
+        :return: a list of DBpedia entities that have the owl:sameAs relation with the input
+        :rtype: list
+        """
+        query = """
+                PREFIX owl:<http://www.w3.org/2002/07/owl#>
+                SELECT ?o WHERE{{
+                <{0}> owl:sameAs ?o .
+                }}
+                """.format(entity)
+        self.sparql.setQuery(query)
+        self.sparql.setReturnFormat(JSON)
+        self.logger.info("Getting same entities for: %s", entity)
+        results = self.sparql.query()
+        if results.response.status != 200:
+            raise Exception("Get same entities failed with status code " + results.responses.status)
+        results = results.convert()
+        if len(results["results"]["bindings"]) > 0:
+            return [res["o"]["value"] for res in results["results"]["bindings"]]
+        return []
 
     def add_sameAs_relation(self, entity_a, entity_b):
         """
@@ -371,5 +422,12 @@ if __name__ == '__main__':
     res = wrapper.check_sameAs_relation("http://dbpedia.org/resource/Rudy_Giuliani", "http://dbpedia.org/resource/Mr_Giuliani")
     print(res)
 
-    wrapper.remove_sameAs_relation("http://dbpedia.org/resource/Mr_Giuliani", "http://dbpedia.org/resource/Rudy_Giuliani")
-    print(wrapper.get_entity("http://dbpedia.org/resource/Mr_Giuliani"))
+    # wrapper.remove_sameAs_relation("http://dbpedia.org/resource/Mr_Giuliani", "http://dbpedia.org/resource/Rudy_Giuliani")
+    # print(wrapper.get_entity("http://dbpedia.org/resource/Mr_Giuliani"))
+
+    res = wrapper.get_same_entities("http://dbpedia.org/resource/Rudy_Giuliani")
+    print(res)
+
+    res = wrapper.get_relation_triples("http://dbpedia.org/resource/Rudy_Giuliani", "http://dbpedia.org/resource/Social_distancing",
+                                       transitive=True)
+    print(res)

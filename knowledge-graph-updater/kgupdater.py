@@ -165,7 +165,7 @@ class KnowledgeGraphUpdater:
         :type triples: list
         """
         for triple in triples:
-            self.knowledge_graph.delete_triple_object(Triple.from_dict(triple))
+            self.knowledge_graph.delete_triple_object(Triple.from_dict(triple), transitive=True)
             # Need to update both triples from articles and from user input. We don't know where the triple was from.
             self.db_article_collection.update_many({},
                                                    {'$set': {'triples.$[].triples.$[triple].added': False}},

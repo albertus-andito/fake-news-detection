@@ -14,6 +14,36 @@ def hello_world():
     return 'Hello Fact Checker'
 
 
+@fc_api.route('/exact/fact-check/triples/transitive/', methods=['POST'])
+def transitive_exact_match_fact_check_triples():
+    """
+    Exact-match closed-world fact checking method, where the input is a list of triples.
+    It also checks for entities with the sameAs relation.
+    ---
+    tags:
+      - Fact-Checker
+    consumes:
+      - application/json
+    parameters:
+      - in: body
+        name: triples_array
+        schema:
+          id: triples_array
+    responses:
+      200:
+        description: Fact-checking result
+        schema:
+          id: fact_checking_result
+    """
+    input_triples = request.get_json()
+    input_triples = [Triple.from_dict(triple) for triple in input_triples]
+    triples = exact_match_fc.fact_check_triples(input_triples, transitive=True)
+    triples = [
+        {'triple': triple.to_dict(), 'result': result, 'other_triples': [other.to_dict() for other in other_triples]}
+        for (triple, (result, other_triples)) in triples.items()]
+    return {'triples': triples}, 200
+
+
 @fc_api.route('/exact/fact-check/triples/', methods=['POST'])
 def exact_match_fact_check_triples():
     """
@@ -69,7 +99,7 @@ def exact_match_fact_check_triples():
                   other_triples:
                     type: array
                     description: list of triples that support the result (conflicting triples, possible triples)
-                    $ref: '#/definitions/triples'
+                    $ref: '#/definitions/triples_array'
             truthfulness:
               type: number
     """
@@ -135,7 +165,7 @@ def exact_match_fact_check():
                         other_triples:
                           type: array
                           description: list of triples that support the result (conflicting triples, possible triples)
-                          $ref: '#/definitions/triples'
+                          $ref: '#/definitions/triples_array'
             truthfulness:
               type: number
     """
@@ -171,10 +201,11 @@ def non_exact_match_fact_check_triples():
     """
     input_triples = request.get_json()
     input_triples = [Triple.from_dict(triple) for triple in input_triples]
-    triples, truthfulness = non_exact_match_fc.fact_check_triples(input_triples)
-    triples = [{'triple': triple.to_dict(), 'exists': exists} for triple_set in triples
-               for (triple, exists) in triple_set.items()]
-    return {'triples': triples, 'truthfulness': truthfulness}, 200
+    triples = non_exact_match_fc.fact_check_triples(input_triples)
+    triples = [
+        {'triple': triple.to_dict(), 'result': result, 'other_triples': [other.to_dict() for other in other_triples]}
+        for (triple, (result, other_triples)) in triples.items()]
+    return {'triples': triples}, 200
 
 
 @fc_api.route('/non-exact/fact-check/', methods=['POST'])
@@ -199,8 +230,9 @@ def non_exact_match_fact_check():
           id: fact_checking_sentences_result
     """
     text = request.get_json()['text']
-    results, truthfulness = non_exact_match_fc.fact_check(text)
-    triples = [{'sentence': sentence, 'triples': [{'triple': triple.to_dict(), 'exists': exists}
-                                                  for (triple, exists) in triples.items()]}
+    results = non_exact_match_fc.fact_check(text)
+    triples = [{'sentence': sentence, 'triples': [{'triple': triple.to_dict(), 'result': result,
+                                                   'other_triples': [other.to_dict() for other in other_triples]}
+                                                  for (triple, (result, other_triples)) in triples.items()]}
                for sentence, triples in results]
-    return {'triples': triples, 'truthfulness': truthfulness}, 200
+    return {'triples': triples}, 200

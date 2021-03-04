@@ -167,11 +167,15 @@ function showErrorNotification(message) {
     });
 }
 
-function RemoveModal({ triple }) {
+function RemoveModal({ triple, algorithm }) {
     const [visible, setVisible] = useState(true);
 
     useEffect(() => {
-        axios.post('/fc/exact/fact-check/triples/', [triple])
+        let url = '/fc/exact/fact-check/triples/';
+        if (algorithm === 'non-exact') {
+            url += 'transitive/';
+        }
+        axios.post(url, [triple])
              .then((res) => {
                  console.log(res);
                  if(res.data.triples[0].result === 'exists') {
@@ -206,7 +210,7 @@ function RemoveModal({ triple }) {
     </>);
 }
 
-function ConflictModal({ conflict }) {
+function ConflictModal({ conflict, algorithm }) {
     const [isModalVisible, setIsModalVisible] = useState(false);
 
     const showModal = () => {
@@ -230,7 +234,8 @@ function ConflictModal({ conflict }) {
             },
             render: (value, row) => {
                 console.log(row)
-                return <RemoveModal triple={{subject: row.subject, relation: row.relation, objects: row.objects}} />
+                return <RemoveModal triple={{subject: row.subject, relation: row.relation, objects: row.objects}}
+                        algorithm={algorithm}/>
             }
         }]
 
@@ -242,6 +247,49 @@ function ConflictModal({ conflict }) {
             <Modal title='Conflict' visible={isModalVisible} onOk={handleOk} onCancel={handleCancel} width={1000}>
                 <Typography.Title level={5}>Triples in Knowledge Graph</Typography.Title>
                 <Table dataSource={conflict} columns={[...tripleColumns, ...action]}
+                       pagination={{hideOnSinglePage: true}}/>
+            </Modal>
+        </>
+    );
+}
+
+function PossibleMatchModal({ possibleMatches, algorithm }) {
+    const [isModalVisible, setIsModalVisible] = useState(false);
+
+    const showModal = () => {
+        setIsModalVisible(true);
+    };
+
+    const handleOk = () => {
+        setIsModalVisible(false);
+    };
+
+    const handleCancel = () => {
+        setIsModalVisible(false);
+    };
+
+    const action = [{
+            title: 'Action',
+            dataIndex: 'result',
+            key: 'result',
+            shouldCellUpdate: () => {
+                return true;
+            },
+            render: (value, row) => {
+                console.log(row)
+                return <RemoveModal triple={{subject: row.subject, relation: row.relation, objects: row.objects}}
+                        algorithm={algorithm}/>
+            }
+        }]
+
+    return (
+        <>
+            <Button type='primary' onClick={showModal} style={{'backgroundColor': 'green'}}>
+                See Possible Matches
+            </Button>
+            <Modal title='Possible Matches' visible={isModalVisible} onOk={handleOk} onCancel={handleCancel} width={1000}>
+                <Typography.Title level={5}>Triples in Knowledge Graph</Typography.Title>
+                <Table dataSource={possibleMatches} columns={[...tripleColumns, ...action]}
                        pagination={{hideOnSinglePage: true}}/>
             </Modal>
         </>
@@ -308,12 +356,14 @@ function FactCheckerView() {
             },
             render: (value, row) => {
                 if (value === 'exists') {
-                    return <RemoveModal triple={row.triple} />
+                    return <RemoveModal triple={row.triple} algorithm={algorithm} />
                 } else if (value === 'conflicts') {
                     return (<Space>
-                            <ConflictModal conflict={row.other_triples}/>
+                            <ConflictModal conflict={row.other_triples} algorithm={algorithm}/>
                             <AddModal triple={row.triple} />
                     </Space>)
+                } else if (value === 'possible') {
+                    return <PossibleMatchModal possibleMatches={row.other_triples} algorithm={algorithm}/>
                 } else if (value === 'none') {
                     return <AddModal triple={row.triple} />
                 }

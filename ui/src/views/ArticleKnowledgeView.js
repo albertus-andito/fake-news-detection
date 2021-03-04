@@ -4,6 +4,7 @@ import axios from "axios";
 import {convertObjectsToDBpediaLink, convertToDBpediaLink, tripleColumns} from "../utils";
 import {ExclamationCircleOutlined} from "@ant-design/icons";
 import showErrorModal from "../components/ShowErrorModal";
+import RemoveModal from "../components/RemoveModal";
 
 const { confirm } = Modal;
 
@@ -33,14 +34,28 @@ function ConflictModal({ conflict }) {
         setIsModalVisible(false);
     };
 
+    const action = [{
+            title: 'Action',
+            dataIndex: 'result',
+            key: 'result',
+            shouldCellUpdate: () => {
+                return true;
+            },
+            render: (value, row) => {
+                console.log(row)
+                return <RemoveModal triple={{subject: row.subject, relation: row.relation, objects: row.objects}}
+                        algorithm='exact'/>
+            }
+        }]
+
     return (
         <>
             <Button type='primary' onClick={showModal} style={{'backgroundColor': 'red'}}>
                 Yes. See Conflict.
             </Button>
-            <Modal title='Conflict' visible={isModalVisible} onOk={handleOk} onCancel={handleCancel}>
+            <Modal title='Conflict' visible={isModalVisible} onOk={handleOk} onCancel={handleCancel} width={1000}>
                 <Typography.Title level={5}>Triples in Knowledge Graph</Typography.Title>
-                <Table dataSource={inKnowledgeGraphConflicts} columns={tripleColumns}
+                <Table dataSource={inKnowledgeGraphConflicts} columns={[...tripleColumns, ...action]}
                        pagination={{hideOnSinglePage: true}}/>
             </Modal>
         </>
@@ -389,6 +404,6 @@ function ArticleKnowledgeView() {
 
         </Card>
     );
-};
+}
 
 export default ArticleKnowledgeView;

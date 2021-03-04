@@ -1,4 +1,5 @@
 import React from "react";
+import {notification} from "antd";
 
 export const convertToDBpediaLink = (text) => {
     if (text.startsWith('http://dbpedia.org/')){
@@ -52,3 +53,10 @@ export const tripleColumns = [
         render: convertObjectsToDBpediaLink,
     },
 ];
+
+export const showErrorNotification = (message) => {
+    notification['error']({
+        message: 'Error!',
+        description: message,
+    });
+}

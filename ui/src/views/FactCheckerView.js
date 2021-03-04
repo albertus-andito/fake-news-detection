@@ -19,8 +19,15 @@ import axios from 'axios';
 import {CheckCircleOutlined, ExclamationCircleOutlined} from '@ant-design/icons';
 import TriplesFormInput from '../components/TriplesFormInput';
 
-import {convertToDBpediaLink, convertObjectsToDBpediaLink, convertRelationToDBpediaLink, tripleColumns} from '../utils';
+import {
+    convertToDBpediaLink,
+    convertObjectsToDBpediaLink,
+    convertRelationToDBpediaLink,
+    tripleColumns,
+    showErrorNotification
+} from '../utils';
 import showErrorModal from "../components/ShowErrorModal";
+import RemoveModal from "../components/RemoveModal";
 
 const { TextArea } = Input;
 const { confirm } = Modal;
@@ -197,56 +204,6 @@ function AddModal({ triple }) {
         </Button>}
         {!visible && 'Added to Knowledge Graph'}
     </>)
-}
-
-function showErrorNotification(message) {
-    notification['error']({
-        message: 'Error!',
-        description: message,
-    });
-}
-
-function RemoveModal({ triple, algorithm }) {
-    const [visible, setVisible] = useState(true);
-
-    useEffect(() => {
-        let url = '/fc/exact/fact-check/triples/';
-        if (algorithm === 'non-exact') {
-            url += 'transitive/';
-        }
-        axios.post(url, [triple])
-             .then((res) => {
-                 console.log(res);
-                 if(res.data.triples[0].result === 'exists') {
-                     setVisible(true)
-                 } else if (res.data.triples[0].result === 'none') {
-                     setVisible(false)
-                 }
-             })
-    }, [triple])
-
-    const showModal = () => confirm({
-        title: 'Do you want to remove this triple from the knowledge graph?',
-        icon: <ExclamationCircleOutlined />,
-        content: <Table dataSource={[triple]} columns={tripleColumns} pagination={{hideOnSinglePage: true}} scroll={{x: true}} />,
-        width: 1000,
-        okType: 'danger',
-        okText: 'Yes',
-        onOk() {
-            return axios.delete('/kgu/triples/', {data: triple})
-                        .then((res) => {
-                            setVisible(false);
-                        }).catch((error) => {
-                            showErrorNotification(error.response.data);
-                        })
-        }
-    });
-    return(<>
-        {visible && <Button type='primary' onClick={showModal} style={{'backgroundColor': 'red'}}>
-            Remove from Knowledge Graph
-        </Button>}
-        {!visible && 'Removed from Knowledge Graph'}
-    </>);
 }
 
 function ConflictModal({ conflict, algorithm }) {

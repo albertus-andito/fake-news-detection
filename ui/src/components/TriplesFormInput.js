@@ -38,13 +38,13 @@ function TriplesFormInput() {
                     ))}
                     <Form.Item>
                         <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
-                            Add triple
+                            More triple
                         </Button>
                     </Form.Item>
                 </>
             )}
         </Form.List>
     );
-};
+}
 
 export default TriplesFormInput;

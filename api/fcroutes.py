@@ -58,6 +58,9 @@ def exact_match_fact_check_url():
           properties:
             url:
               type: string
+            extraction_scope:
+              type: string
+              enum: [noun_phrases, named_entities, all]
         required: true
     responses:
       200:
@@ -66,8 +69,9 @@ def exact_match_fact_check_url():
           id: fact_checking_result
     """
     url = request.get_json()['url']
+    extraction_scope = request.get_json()['extraction_scope']
     text = scrape_text_from_url(url)
-    results = exact_match_fc.fact_check(text)
+    results = exact_match_fc.fact_check(text, extraction_scope)
     triples = [{'sentence': sentence, 'triples': [{'triple': triple.to_dict(), 'result': result,
                                                    'other_triples': [other.to_dict() for other in other_triples]}
                                                   for (triple, (result, other_triples)) in triples.items()]}
@@ -191,6 +195,9 @@ def exact_match_fact_check():
           properties:
             text:
               type: string
+            extraction_scope:
+              type: string
+              enum: [noun_phrases, named_entities, all]
         required: true
     responses:
       200:
@@ -232,7 +239,8 @@ def exact_match_fact_check():
               type: number
     """
     text = request.get_json()['text']
-    results = exact_match_fc.fact_check(text)
+    extraction_scope = request.get_json()['extraction_scope']
+    results = exact_match_fc.fact_check(text, extraction_scope)
     triples = [{'sentence': sentence, 'triples': [{'triple': triple.to_dict(), 'result': result,
                                                    'other_triples': [other.to_dict() for other in other_triples]}
                                                   for (triple, (result, other_triples)) in triples.items()]}
@@ -254,11 +262,6 @@ def non_exact_match_fact_check_url():
         name: url
         schema:
           id: url
-          type: object
-          properties:
-            url:
-              type: string
-        required: true
     responses:
       200:
         description: Fact-checking result
@@ -267,7 +270,8 @@ def non_exact_match_fact_check_url():
     """
     url = request.get_json()['url']
     text = scrape_text_from_url(url)
-    results = non_exact_match_fc.fact_check(text)
+    extraction_scope = request.get_json()['extraction_scope']
+    results = non_exact_match_fc.fact_check(text, extraction_scope)
     triples = [{'sentence': sentence, 'triples': [{'triple': triple.to_dict(), 'result': result,
                                                    'other_triples': [other.to_dict() for other in other_triples]}
                                                   for (triple, (result, other_triples)) in triples.items()]}
@@ -327,7 +331,8 @@ def non_exact_match_fact_check():
           id: fact_checking_sentences_result
     """
     text = request.get_json()['text']
-    results = non_exact_match_fc.fact_check(text)
+    extraction_scope = request.get_json()['extraction_scope']
+    results = non_exact_match_fc.fact_check(text, extraction_scope)
     triples = [{'sentence': sentence, 'triples': [{'triple': triple.to_dict(), 'result': result,
                                                    'other_triples': [other.to_dict() for other in other_triples]}
                                                   for (triple, (result, other_triples)) in triples.items()]}

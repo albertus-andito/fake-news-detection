@@ -5,17 +5,20 @@ class ExactMatchFactChecker(FactChecker):
     """
     An Exact Match Fact Checker, where a truthfulness is decided only by finding the exact match of the triples.
     """
-    def fact_check(self, article):
+    def fact_check(self, article, extraction_scope):
         """
         Fact check the given text, by first extracting the triples and then finding the exact match of the triples in the
         knowledge graph.
         Truthfulness score is calculated simply by dividing the number of triples found by the number of all triples.
         :param article: article text
         :type article: str
+        :param extraction_scope: The scope of the extraction, deciding whether it should include only relations between
+        'named_entities', 'noun_phrases', or 'all'.
+        :type extraction_scope: str
         :return: a tuple of fact check result (sentence, triples, and their existence) and the truthfulness score
         :rtype: tuple
         """
-        article_triples = self.get_triples(article)
+        article_triples = self.get_triples(article, extraction_scope)
         fc_result = [(sentence, {triple: self.exact_fact_check(triple)
                       for triple in triples}) for (sentence, triples) in article_triples]
         # truth_values = [val for sentence, triples in fc_result for val in triples.values()]

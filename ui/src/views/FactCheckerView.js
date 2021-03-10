@@ -56,12 +56,14 @@ function handleFactCheckResponse(response, setLoading, setExactMatch, setPossibl
     setUnknown(unknown);
 }
 
-function ArticleTextForm({loading, setLoading, algorithm, setExactMatch, setPossibleMatch, setConflict, setUnknown}) {
+function ArticleTextForm({loading, setLoading, algorithm, extractionScope, setExactMatch, setPossibleMatch, setConflict,
+                             setUnknown}) {
     const onSubmit = (values) => {
         setLoading(true);
         console.log('Submitted', values);
         axios.post(`/fc/${algorithm}/fact-check/`, {
-            text: values.text
+            text: values.text,
+            extraction_scope: extractionScope,
         })
         .then(function (response) {
             handleFactCheckResponse(response, setLoading, setExactMatch, setPossibleMatch, setConflict, setUnknown);
@@ -140,12 +142,14 @@ function TriplesForm({loading, setLoading, algorithm, setExactMatch, setPossible
     );
 }
 
-function URLForm({ loading, setLoading, algorithm, setExactMatch, setConflict, setPossibleMatch, setUnknown }) {
+function URLForm({ loading, setLoading, algorithm, extractionScope, setExactMatch, setConflict, setPossibleMatch,
+                     setUnknown }) {
     const onSubmit = (values) => {
         setLoading(true);
         console.log('Submitted', values);
         axios.post(`/fc/${algorithm}/fact-check/url/`, {
-            url: values.url
+            url: values.url,
+            extraction_scope: extractionScope,
         })
         .then(function (response) {
             handleFactCheckResponse(response, setLoading, setExactMatch, setPossibleMatch, setConflict, setUnknown);
@@ -296,6 +300,7 @@ function FactCheckerView() {
     const [loading, setLoading] = useState(false);
     const [algorithm, setAlgorithm] =  useState('exact');
     const [inputType, setInputType] = useState('text');
+    const [extractionScope, setExtractionScope] = useState('noun_phrases')
     const [exactMatch, setExactMatch] = useState([]);
     const [possibleMatch, setPossibleMatch] = useState([]);
     const [conflict, setConflict] = useState([]);
@@ -309,6 +314,10 @@ function FactCheckerView() {
         setInputType(e.target.value);
     }
 
+    const onExtractionScopeChange = (e) =>{
+        setExtractionScope(e.target.value);
+    }
+
     const inputTypes = [
         { label: 'Text', value: 'text' },
         { label: 'Triples', value: 'triples' },
@@ -319,6 +328,12 @@ function FactCheckerView() {
         { label: 'Exact Match Only', value: 'exact'},
         { label: 'With Non Exact Match', value: 'non-exact'},
     ];
+
+    const extractionScopes = [
+        { label: 'Noun phrases', value: 'noun_phrases'},
+        { label: 'Named entities', value: 'named_entities'},
+        { label: 'All', value: 'all'},
+    ]
 
     const columns = [
         {
@@ -390,9 +405,19 @@ function FactCheckerView() {
                     optionType='button'
                     buttonStyle='solid'
                 />
+
+                Extraction scope:
+                <Radio.Group
+                    options={extractionScopes}
+                    value={extractionScope}
+                    onChange={onExtractionScopeChange}
+                    optionType='button'
+                    buttonStyle='solid'
+                />
             </Space>
 
             {inputType === 'text' && <ArticleTextForm loading={loading} setLoading={setLoading} algorithm={algorithm}
+                                                      extractionScope={extractionScope}
                                                       setExactMatch={setExactMatch} setPossibleMatch={setPossibleMatch}
                                                       setConflict={setConflict} setUnknown={setUnknown}/>}
 
@@ -401,6 +426,7 @@ function FactCheckerView() {
                                                      setConflict={setConflict} setUnknown={setUnknown}/>}
 
             {inputType === 'url' && <URLForm loading={loading} setLoading={setLoading} algorithm={algorithm}
+                                             extractionScope={extractionScope}
                                              setExactMatch={setExactMatch} setPossibleMatch={setPossibleMatch}
                                              setConflict={setConflict} setUnknown={setUnknown}/>}
 

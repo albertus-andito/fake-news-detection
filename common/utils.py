@@ -11,7 +11,7 @@ def camelise(sentence):
     """
     sentence = sentence.replace('_', ' ')
     words = word_tokenize(sentence)
-    if len(words) == 1:
+    if len(words) <= 1:
         return sentence.lower()
     else:
         s = "".join(word[0].upper() + word[1:].lower() for word in words)

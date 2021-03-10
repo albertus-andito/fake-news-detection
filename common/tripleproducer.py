@@ -38,6 +38,7 @@ class TripleProducer:
         """
         Constructor method
         """
+        # Triple extractor setup
         if extractor_type == 'stanford_openie':
             self.extractor = StanfordExtractor()
         elif extractor_type == 'iit_openie' or extractor_type is None:
@@ -45,15 +46,21 @@ class TripleProducer:
         else:
             raise ValueError("The extractor_type is unrecognised. Use 'stanford_openie' or 'iit_openie'.")
 
+        # Extraction scope setup
         self.extraction_scope = 'named_entities' if extraction_scope is None else extraction_scope
         if self.extraction_scope not in ['named_entities', 'noun_phrases', 'all']:
             raise ValueError("The extraction_scope is unrecognised. Use 'named_entities', 'noun_phrases', or 'all'.")
 
+        # Knowledge graph setup
         self.knowledge_graph = KnowledgeGraphWrapper()
 
-        self.nlp = spacy.load('en')
+        # Spacy setup
+        self.nlp = spacy.load('en_core_web_sm')
         neuralcoref.add_to_pipe(self.nlp)
+        self.all_stopwords = self.nlp.Defaults.stop_words
+        self.all_stopwords.discard('not')
 
+        # Logger setup
         LOGFILE_PATH = os.path.join(ROOT_DIR, 'logs', 'triple-producer.log').replace("\\", "/")
         logging.config.fileConfig(LOGGER_CONFIG_PATH,
                                   defaults={'logfilename': LOGFILE_PATH},
@@ -99,11 +106,14 @@ class TripleProducer:
             all_triples = self.filter_in_named_entities(spacy_doc, all_triples)
         elif extraction_scope == 'noun_phrases':
             all_triples = self.filter_in_noun_phrases(spacy_doc, all_triples)
+            # all_triples = self.filter_noun_phrases(all_triples)
         # TODO: combined extraction scopes of named_entities and noun_phrases?
 
         # remove stopwords from Subject and Object if scope is 'named_entities' or 'noun_phrases'
-        if extraction_scope != 'all':
-            all_triples = self.remove_stopwords(all_triples)
+        # (removing stopwords doesn't always make sense. What if the stopwords are meant to be in the noun phrase
+        # or named entities anyway?)
+        # if extraction_scope != 'all':
+        #     all_triples = self.remove_stopwords(all_triples)
 
         # map to dbpedia resource (dbpedia spotlight) for Named Entities
         all_triples = self.spot_entities_with_context(document, all_triples)
@@ -154,7 +164,7 @@ class TripleProducer:
 
     def __capitalise_sentence_start(self, document):
         sentences = document.split('. ')
-        capitalised = [sentence[0].capitalize() + sentence[1:] for sentence in sentences]
+        capitalised = [sentence[0].capitalize() + sentence[1:] for sentence in sentences if len(sentence) > 0]
         return '. '.join(capitalised)
 
     def extract_triples(self, sentences):
@@ -205,7 +215,8 @@ class TripleProducer:
     # spacy noun chunks is not accurate
     def filter_in_noun_phrases(self, spacy_doc, all_triples):
         """
-        Filter in only triples where the Subject and Object are both noun phrases
+        Filter in only triples where the Subject and Object are both (in the list of) noun phrases.
+        The list of noun phrases is generated from the spacy document.
         :param spacy_doc: spacy document
         :type spacy_doc: spacy.tokens.Doc
         :param all_triples: a list of list of triples (top-level list represents sentences)
@@ -213,8 +224,38 @@ class TripleProducer:
         :return: a list of list of triples in which the Subjects and Objects are all noun phrases
         :rtype: list
         """
-        noun_phrases = [chunk.text for chunk in spacy_doc.noun_chunks]
+        noun_phrases = [chunk.text.lower() for chunk in spacy_doc.noun_chunks]
         return self.__filter(noun_phrases, all_triples)
+
+    def filter_noun_phrases(self, all_triples):
+        """
+        Filter in only triples where the Subject and Object are both noun phrases.
+        Whether subject or object is a noun phrase or not is determined by making each subject and object into Spacy
+        document, and then check if it is a noun phrase or not, or if it is a noun or not.
+        Due to the Spacy document being created for all subjects and objects, this method is slower than the other
+        method above.
+        :param all_triples: a list of list of triples (top-level list represents sentences)
+        :type all_triples: list
+        :return: a list of list of triples in which the Subjects and Objects are all noun phrases
+        :rtype: list
+        """
+        filtered_triples_sentences = []
+        for sentence in all_triples:
+            filtered_triples = []
+            for triple in sentence:
+                s_noun_phrases = [chunk.text for chunk in self.nlp(triple.subject).noun_chunks]
+                s_noun_phrases += [token.text for token in self.nlp(triple.subject) if (token.pos_ == 'NOUN'
+                                   or token.pos_ == 'PROPN') and token.text not in s_noun_phrases]
+                if triple.subject in s_noun_phrases:
+                    for obj in triple.objects:
+                        o_noun_phrases = [chunk.text for chunk in self.nlp(obj).noun_chunks]
+                        o_noun_phrases += [token.text for token in self.nlp(obj) if (token.pos_ == 'NOUN'
+                                           or token.pos_ == 'PROPN') and token.text not in o_noun_phrases]
+                        if obj in o_noun_phrases:
+                            filtered_triples.append(triple)
+                            break
+            filtered_triples_sentences.append(filtered_triples)
+        return filtered_triples_sentences
 
     def __filter(self, in_list, all_triples):
         """
@@ -230,9 +271,11 @@ class TripleProducer:
         for sentence in all_triples:
             filtered_triples = []
             for triple in sentence:
-                if triple.subject in in_list:  # if any(triple.subject in word or word in triple.subject for word in in_list):
+                if triple.subject.lower() in in_list or any(triple.subject.lower() in token for token in in_list):
+                    # if any(triple.subject in word or word in triple.subject for word in in_list):
                     for obj in triple.objects:
-                        if obj in in_list:  # if any(obj in word or word in obj for word in in_list):
+                        if obj.lower() in in_list or any(obj.lower() in token for token in in_list):
+                            # if any(obj in word or word in obj for word in in_list):
                             filtered_triples.append(triple)
                             break
             filtered_triples_sentences.append(filtered_triples)
@@ -392,7 +435,7 @@ class TripleProducer:
 
     def lemmatise_relations(self, spacy_doc, all_triples):
         """
-        Lemmatise relations to their based forms.
+        Lemmatise relations to their base forms.
         :param spacy_doc: spacy document
         :type spacy_doc: spacy.tokens.Doc
         :param all_triples: list of list of triples (top-level list represents sentences)
@@ -400,17 +443,26 @@ class TripleProducer:
         :return: list of list of triples where relations have been lemmatised
         :rtype: list
         """
-        all_stopwords = self.nlp.Defaults.stop_words
         for sentence in all_triples:
             for triple in sentence:
-                relation = [word for word in word_tokenize(triple.relation.replace('[', '').replace(']', '')) if
-                            word not in all_stopwords]
-                triple.relation = ' '.join([self.__get_lemma(token, spacy_doc) for token in relation])
-                if not triple.relation:
-                    triple.relation = "is"
+                if triple.relation == 'is in':
+                    triple.relation = 'in'
+                else:
+                    relation = [word for word in word_tokenize(triple.relation.replace('[', '').replace(']', ''))]
+                    if len(relation) > 1:
+                        relation = [word for word in relation if word not in self.all_stopwords]
+                    triple.relation = ' '.join([self.__get_lemma(token, spacy_doc) for token in relation])
+                    if not triple.relation or triple.relation == 'be':
+                        triple.relation = 'is'
         return all_triples
 
     def __get_lemma(self, token, spacy_doc):
+        """
+        Find the lemma based on the token's appearence in the text
+        :param token:
+        :param spacy_doc:
+        :return: lemma of the token
+        """
         matcher = Matcher(self.nlp.vocab)
         matcher.add(token, None, [{"TEXT": token}])
         if len(matcher(spacy_doc)) == 0:

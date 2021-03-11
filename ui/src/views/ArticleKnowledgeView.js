@@ -13,17 +13,26 @@ function ArticleTable({selectedArticle, setSelectedArticle, isUpdating}) {
             title: 'Article URL',
             dataIndex: 'source',
             key: 'source',
+            sorter: {
+                compare: (a, b) => (a.source || '').localeCompare(b.source || ''),
+            },
             render: (text) => <a href={text}>{text}</a>,
         },
         {
             title: 'Headline',
             dataIndex: 'headlines',
             key: 'headlines',
+            sorter: {
+                compare: (a, b) => (a.headlines || '').localeCompare(b.headlines || ''),
+            },
         },
         {
             title: 'Date',
             dataIndex: 'date',
             key: 'date',
+            sorter: {
+                compare: (a, b) => a.date - b.date
+            },
             render: (text) => <p>{new Date(text * 1000).toUTCString()}</p>
         }
     ];

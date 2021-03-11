@@ -2,11 +2,10 @@ import {Button, Card, Divider, Modal, Popover, Radio, Space, Spin, Switch, Table
 import React, { useState, useEffect } from 'react';
 import axios from "axios";
 import {convertToDBpediaLink, tripleColumns} from "../utils";
-import RemoveModal from "../components/RemoveModal";
 import TriplesTables from "../components/TriplesTables";
 import {handleFactCheckResponse} from "./FactCheckerView";
 
-function ArticleTable({selectedArticle, setSelectedArticle}) {
+function ArticleTable({selectedArticle, setSelectedArticle, isUpdating}) {
     const [articles, setArticles] = useState();
 
     const articleColumns = [
@@ -48,7 +47,7 @@ function ArticleTable({selectedArticle, setSelectedArticle}) {
 
     useEffect(() => {
         getArticles();
-    }, []);
+    }, [isUpdating]);
 
     return(
         <Table
@@ -116,7 +115,6 @@ function ArticleKnowledgeView() {
             .then((res) => {
                 axios.post('/fc/non-exact/fact-check/triples-sentences/', res.data.triples)
                     .then((res) => {
-                        console.log(res);
                         handleFactCheckResponse(res, setLoading, setExactMatch, setPossibleMatch, setConflict, setUnknown)
                     })
                     .catch((err) => {
@@ -235,7 +233,7 @@ function ArticleKnowledgeView() {
                 Triples to be added to the knowledge graph.
             </Typography>
 
-            <ArticleTable selectedArticle={selectedArticle} setSelectedArticle={setSelectedArticle}/>
+            <ArticleTable selectedArticle={selectedArticle} setSelectedArticle={setSelectedArticle} isUpdating={isUpdating}/>
 
             <div style={{ textAlign: 'center'}}>
                 {loading && <Spin tip='Loading...' size='large'/>}
@@ -247,6 +245,8 @@ function ArticleKnowledgeView() {
                 possibleMatch={possibleMatch}
                 conflict={conflict}
                 unknown={unknown}
+                isArticle={true}
+                sourceUrl={selectedArticle[0]}
             />
 
         </Card>

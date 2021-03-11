@@ -6,7 +6,7 @@ import axios from "axios";
 
 const { confirm } = Modal;
 
-function AddModal({ triple }) {
+function AddModal({ triple, isArticle, source, sentence }) {
     const [visible, setVisible] = useState(true);
 
     useEffect(() => {
@@ -20,13 +20,33 @@ function AddModal({ triple }) {
         width: 1000,
         okText: 'Yes',
         onOk() {
-            return axios.post('/kgu/triples/force/', [triple])
+            if (isArticle !== true) {
+                return axios.post('/kgu/triples/force/', [triple])
                         .then((res) => {
                             setVisible(false);
                         })
                         .catch((error) => {
                             showErrorNotification(error.response.data);
                         })
+            } else {
+                return axios.post('/kgu/article-triples/insert/', [{
+                        source: source,
+                        triples: [{
+                            sentence: sentence,
+                            triples: [{
+                                added: false,
+                                ...triple
+                            }]
+                        }]
+                    }])
+                    .then((res) => {
+                        setVisible(false);
+                    })
+                    .catch((error) => {
+                        showErrorNotification(error.response.data);
+                    })
+            }
+
         }
     });
     return(<>

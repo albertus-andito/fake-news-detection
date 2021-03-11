@@ -102,7 +102,11 @@ class KnowledgeGraphWrapper:
         results = self.sparql.query()
         if results.response.status != 200:
             raise Exception("Check triple existence failed with status code " + results.responses.status)
-        return results.convert()["boolean"]
+        try:
+            return results.convert()["boolean"]
+        except Exception as e:
+            print(e)
+            return False
 
     def get_triples(self, subject, relation, transitive=False):
         """
@@ -130,8 +134,11 @@ class KnowledgeGraphWrapper:
         if results.response.status != 200:
             raise Exception("Get triples given relation failed with status code " + results.responses.status)
         results = results.convert()
-        if len(results["results"]["bindings"]) > 0:
-            return [Triple(subject, relation, [res["o"]["value"]]) for res in results["results"]["bindings"]]
+        try:
+            if len(results["results"]["bindings"]) > 0:
+                return [Triple(subject, relation, [res["o"]["value"]]) for res in results["results"]["bindings"]]
+        except Exception as e:
+            print(e)
         return None
 
     def get_relation_triples(self, subject, obj, transitive=False):

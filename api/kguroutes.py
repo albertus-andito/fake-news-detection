@@ -189,92 +189,92 @@ def delete_all_article_triples(source):
     return {'source': source, 'message': 'All triples deleted.'}, 200
 
 
-@kgu_api.route('/article-triples/conflicts/<path:source>')
-def conflicts_from_article(source):
-    """
-    Returns triples from the specified article that have conflicts with the knowledge graph.
-    ---
-    tags:
-      - Knowledge Graph Updater (Articles)
-    definitions:
-      conflicted_triples:
-        type: object
-        properties:
-          source:
-            type: string
-          conflicts:
-            type: array
-            description: array of conflicted triples extracted from the article
-            items:
-              type: object
-              properties:
-                toBeInserted:
-                  type: object
-                  properties:
-                    subject:
-                      type: string
-                    relation:
-                      type: string
-                    objects:
-                      type: array
-                      items:
-                        type: string
-                inKnowledgeGraph:
-                  type: object
-                  properties:
-                    subject:
-                      type: string
-                    relation:
-                      type: string
-                    objects:
-                      type: array
-                      items:
-                        type: string
-                added:
-                  type: boolean
-                  description: whether the conflicted triple was added to the knowledge graph at some point
-    parameters:
-      - name: source
-        in: path
-        description: URL of article whose conflicted triples are going to be retrieved.
-        type: string
-        required: true
-    responses:
-      200:
-        description: Conflicted triples of the article returned successfully
-        schema:
-          $ref: '#/definitions/conflicted_triples'
-      404:
-        description: No conflicted triples for the specified article are not found.
-        schema:
-          id: article_url_with_message
-    """
-    conflicts = kgu.get_article_conflicts(source)
-    if conflicts is None:
-        return {'source': source, 'message': 'No conflicts found for this article'}, 404
-    return {'source': source, 'conflicts': conflicts}, 200
+# @kgu_api.route('/article-triples/conflicts/<path:source>')
+# def conflicts_from_article(source):
+#     """
+#     Returns triples from the specified article that have conflicts with the knowledge graph.
+#     ---
+#     tags:
+#       - Knowledge Graph Updater (Articles)
+#     definitions:
+#       conflicted_triples:
+#         type: object
+#         properties:
+#           source:
+#             type: string
+#           conflicts:
+#             type: array
+#             description: array of conflicted triples extracted from the article
+#             items:
+#               type: object
+#               properties:
+#                 toBeInserted:
+#                   type: object
+#                   properties:
+#                     subject:
+#                       type: string
+#                     relation:
+#                       type: string
+#                     objects:
+#                       type: array
+#                       items:
+#                         type: string
+#                 inKnowledgeGraph:
+#                   type: object
+#                   properties:
+#                     subject:
+#                       type: string
+#                     relation:
+#                       type: string
+#                     objects:
+#                       type: array
+#                       items:
+#                         type: string
+#                 added:
+#                   type: boolean
+#                   description: whether the conflicted triple was added to the knowledge graph at some point
+#     parameters:
+#       - name: source
+#         in: path
+#         description: URL of article whose conflicted triples are going to be retrieved.
+#         type: string
+#         required: true
+#     responses:
+#       200:
+#         description: Conflicted triples of the article returned successfully
+#         schema:
+#           $ref: '#/definitions/conflicted_triples'
+#       404:
+#         description: No conflicted triples for the specified article are not found.
+#         schema:
+#           id: article_url_with_message
+#     """
+#     conflicts = kgu.get_article_conflicts(source)
+#     if conflicts is None:
+#         return {'source': source, 'message': 'No conflicts found for this article'}, 404
+#     return {'source': source, 'conflicts': conflicts}, 200
 
 
-@kgu_api.route('/article-triples/conflicts/')
-def conflicts_from_articles():
-    """
-    Returns all conflicted triples from all scraped articles.
-    ---
-    tags:
-      - Knowledge Graph Updater (Articles)
-    responses:
-      200:
-        description: Conflicted triples of all articles returned successfully
-        schema:
-          id: all_conflicted_triples
-          type: object
-          properties:
-            all_conflicts:
-              type: array
-              items:
-                $ref: '#/definitions/conflicted_triples'
-    """
-    return {'all_conflicts': kgu.get_all_article_conflicts()}, 200
+# @kgu_api.route('/article-triples/conflicts/')
+# def conflicts_from_articles():
+#     """
+#     Returns all conflicted triples from all scraped articles.
+#     ---
+#     tags:
+#       - Knowledge Graph Updater (Articles)
+#     responses:
+#       200:
+#         description: Conflicted triples of all articles returned successfully
+#         schema:
+#           id: all_conflicted_triples
+#           type: object
+#           properties:
+#             all_conflicts:
+#               type: array
+#               items:
+#                 $ref: '#/definitions/conflicted_triples'
+#     """
+#     return {'all_conflicts': kgu.get_all_article_conflicts()}, 200
 
 
 @kgu_api.route('/article-triples/pending/<path:source>')

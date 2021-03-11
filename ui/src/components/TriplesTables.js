@@ -5,7 +5,7 @@ import ConflictModal from "./ConflictModal";
 import PossibleMatchModal from "./PossibleMatchModal";
 import AddModal from "./AddModal";
 
-function TriplesTables({exactMatch, possibleMatch, conflict, unknown, algorithm}) {
+function TriplesTables({exactMatch, possibleMatch, conflict, unknown, algorithm, isArticle, sourceUrl}) {
     let columns = [
         {
             title: 'Sentence',
@@ -43,12 +43,12 @@ function TriplesTables({exactMatch, possibleMatch, conflict, unknown, algorithm}
                 } else if (value === 'conflicts') {
                     return (<Space>
                             <ConflictModal conflict={row.other_triples} algorithm={algorithm}/>
-                            <AddModal triple={row.triple} />
+                            <AddModal triple={row.triple} isArticle={isArticle} source={sourceUrl} sentence={row.sentence}/>
                     </Space>)
                 } else if (value === 'possible') {
                     return <PossibleMatchModal possibleMatches={row.other_triples} algorithm={algorithm}/>
                 } else if (value === 'none') {
-                    return <AddModal triple={row.triple} />
+                    return <AddModal triple={row.triple} isArticle={isArticle} source={sourceUrl} sentence={row.sentence}/>
                 }
 
             }

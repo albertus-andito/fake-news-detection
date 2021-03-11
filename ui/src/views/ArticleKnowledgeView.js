@@ -245,6 +245,10 @@ function ArticleKnowledgeView() {
                 possibleMatch={possibleMatch}
                 conflict={conflict}
                 unknown={unknown}
+                setExactMatch={setExactMatch}
+                setConflict={setConflict}
+                setPossibleMatch={setPossibleMatch}
+                setUnknown={setUnknown}
                 isArticle={true}
                 sourceUrl={selectedArticle[0]}
             />

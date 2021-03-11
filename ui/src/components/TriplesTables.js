@@ -4,8 +4,11 @@ import RemoveModal from "./RemoveModal";
 import ConflictModal from "./ConflictModal";
 import PossibleMatchModal from "./PossibleMatchModal";
 import AddModal from "./AddModal";
+import DiscardModal from "./DiscardModal";
 
-function TriplesTables({exactMatch, possibleMatch, conflict, unknown, algorithm, isArticle, sourceUrl}) {
+function TriplesTables({exactMatch, possibleMatch, conflict, unknown,
+                       setExactMatch, setPossibleMatch, setConflict, setUnknown,
+                       algorithm, isArticle, sourceUrl}) {
     let columns = [
         {
             title: 'Sentence',
@@ -41,14 +44,36 @@ function TriplesTables({exactMatch, possibleMatch, conflict, unknown, algorithm,
                 if (value === 'exists') {
                     return <RemoveModal triple={row.triple} algorithm={algorithm} />
                 } else if (value === 'conflicts') {
-                    return (<Space>
+                    return (
+                        <Space>
                             <ConflictModal conflict={row.other_triples} algorithm={algorithm}/>
                             <AddModal triple={row.triple} isArticle={isArticle} source={sourceUrl} sentence={row.sentence}/>
-                    </Space>)
+                            {isArticle &&
+                            <DiscardModal
+                                triple={row.triple} source={sourceUrl} sentence={row.sentence}
+                                tripleKey={row.key} data={conflict} setData={setConflict}
+                            />}
+                        </Space>)
                 } else if (value === 'possible') {
-                    return <PossibleMatchModal possibleMatches={row.other_triples} algorithm={algorithm}/>
+                    return (
+                        <Space>
+                            <PossibleMatchModal possibleMatches={row.other_triples} algorithm={algorithm}/>
+                            {isArticle &&
+                            <DiscardModal
+                                triple={row.triple} source={sourceUrl} sentence={row.sentence}
+                                tripleKey={row.key} data={possibleMatch} setData={setPossibleMatch}
+                            />}
+                        </Space>)
                 } else if (value === 'none') {
-                    return <AddModal triple={row.triple} isArticle={isArticle} source={sourceUrl} sentence={row.sentence}/>
+                    return (
+                        <Space>
+                            <AddModal triple={row.triple} isArticle={isArticle} source={sourceUrl} sentence={row.sentence}/>
+                            {isArticle &&
+                            <DiscardModal
+                                triple={row.triple} source={sourceUrl} sentence={row.sentence}
+                                tripleKey={row.key} data={unknown} setData={setUnknown}
+                            />}
+                        </Space>)
                 }
 
             }

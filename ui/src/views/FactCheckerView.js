@@ -20,6 +20,8 @@ import TriplesFormInput from '../components/TriplesFormInput';
 
 import TriplesTables from "../components/TriplesTables";
 
+const crypto = require('crypto');
+
 const { TextArea } = Input;
 
 export const handleFactCheckResponse = (response, setLoading, setExactMatch, setPossibleMatch, setConflict, setUnknown) => {
@@ -27,7 +29,8 @@ export const handleFactCheckResponse = (response, setLoading, setExactMatch, set
     const [exactMatch, possibleMatch, conflict, unknown] = [[],[],[],[]];
     response.data.triples.forEach((sentence) => {
         sentence.triples.forEach((triple) => {
-            const pushed = {sentence: sentence.sentence, triple: triple.triple, result: triple.result};
+            const pushed = {key: crypto.randomBytes(16).toString('hex'), sentence: sentence.sentence,
+                            triple: triple.triple, result: triple.result};
             if (triple.result === 'exists') {
                 exactMatch.push({...pushed});
             } else if (triple.result === 'conflicts') {

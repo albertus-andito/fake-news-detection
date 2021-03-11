@@ -16,24 +16,13 @@ import {
 } from 'antd';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import {CheckCircleOutlined, ExclamationCircleOutlined} from '@ant-design/icons';
 import TriplesFormInput from '../components/TriplesFormInput';
 
-import {
-    convertToDBpediaLink,
-    convertObjectsToDBpediaLink,
-    convertRelationToDBpediaLink,
-    tripleColumns,
-    showErrorNotification
-} from '../utils';
-import showErrorModal from "../components/ShowErrorModal";
-import RemoveModal from "../components/RemoveModal";
+import TriplesTables from "../components/TriplesTables";
 
 const { TextArea } = Input;
-const { confirm } = Modal;
 
-function handleFactCheckResponse(response, setLoading, setExactMatch, setPossibleMatch, setConflict, setUnknown) {
-    console.log(response);
+export const handleFactCheckResponse = (response, setLoading, setExactMatch, setPossibleMatch, setConflict, setUnknown) => {
     setLoading(false);
     const [exactMatch, possibleMatch, conflict, unknown] = [[],[],[],[]];
     response.data.triples.forEach((sentence) => {
@@ -179,123 +168,6 @@ function URLForm({ loading, setLoading, algorithm, extractionScope, setExactMatc
     );
 }
 
-function AddModal({ triple }) {
-    const [visible, setVisible] = useState(true);
-
-    useEffect(() => {
-        setVisible(true);
-    }, [triple])
-
-    const showModal = () => confirm({
-        title: 'Do you want to add this triple to the knowledge graph?',
-        icon: <ExclamationCircleOutlined />,
-        content: <Table dataSource={[triple]} columns={tripleColumns} pagination={{hideOnSinglePage: true}} scroll={{x: true}} />,
-        width: 1000,
-        okText: 'Yes',
-        onOk() {
-            return axios.post('/kgu/triples/force/', [triple])
-                        .then((res) => {
-                            setVisible(false);
-                        })
-                        .catch((error) => {
-                            showErrorNotification(error.response.data);
-                        })
-        }
-    });
-    return(<>
-        {visible && <Button type='primary' onClick={showModal} style={{'backgroundColor': 'green'}}>
-            Add to Knowledge Graph
-        </Button>}
-        {!visible && 'Added to Knowledge Graph'}
-    </>)
-}
-
-function ConflictModal({ conflict, algorithm }) {
-    const [isModalVisible, setIsModalVisible] = useState(false);
-
-    const showModal = () => {
-        setIsModalVisible(true);
-    };
-
-    const handleOk = () => {
-        setIsModalVisible(false);
-    };
-
-    const handleCancel = () => {
-        setIsModalVisible(false);
-    };
-
-    const action = [{
-            title: 'Action',
-            dataIndex: 'result',
-            key: 'result',
-            shouldCellUpdate: () => {
-                return true;
-            },
-            render: (value, row) => {
-                console.log(row)
-                return <RemoveModal triple={{subject: row.subject, relation: row.relation, objects: row.objects}}
-                        algorithm={algorithm}/>
-            }
-        }]
-
-    return (
-        <>
-            <Button type='primary' onClick={showModal} style={{'backgroundColor': 'red'}}>
-                See Conflict
-            </Button>
-            <Modal title='Conflict' visible={isModalVisible} onOk={handleOk} onCancel={handleCancel} width={1000}>
-                <Typography.Title level={5}>Triples in Knowledge Graph</Typography.Title>
-                <Table dataSource={conflict} columns={[...tripleColumns, ...action]}
-                       pagination={{hideOnSinglePage: true}}/>
-            </Modal>
-        </>
-    );
-}
-
-function PossibleMatchModal({ possibleMatches, algorithm }) {
-    const [isModalVisible, setIsModalVisible] = useState(false);
-
-    const showModal = () => {
-        setIsModalVisible(true);
-    };
-
-    const handleOk = () => {
-        setIsModalVisible(false);
-    };
-
-    const handleCancel = () => {
-        setIsModalVisible(false);
-    };
-
-    const action = [{
-            title: 'Action',
-            dataIndex: 'result',
-            key: 'result',
-            shouldCellUpdate: () => {
-                return true;
-            },
-            render: (value, row) => {
-                console.log(row)
-                return <RemoveModal triple={{subject: row.subject, relation: row.relation, objects: row.objects}}
-                        algorithm={algorithm}/>
-            }
-        }]
-
-    return (
-        <>
-            <Button type='primary' onClick={showModal} style={{'backgroundColor': 'green'}}>
-                See Possible Matches
-            </Button>
-            <Modal title='Possible Matches' visible={isModalVisible} onOk={handleOk} onCancel={handleCancel} width={1000}>
-                <Typography.Title level={5}>Triples in Knowledge Graph</Typography.Title>
-                <Table dataSource={possibleMatches} columns={[...tripleColumns, ...action]}
-                       pagination={{hideOnSinglePage: true}}/>
-            </Modal>
-        </>
-    );
-}
-
 function FactCheckerView() {
     const [loading, setLoading] = useState(false);
     const [algorithm, setAlgorithm] =  useState('exact');
@@ -334,55 +206,6 @@ function FactCheckerView() {
         { label: 'Named entities', value: 'named_entities'},
         { label: 'All', value: 'all'},
     ]
-
-    const columns = [
-        {
-            title: 'Sentence',
-            dataIndex: 'sentence',
-            key: 'sentence',
-        },
-        {
-            title: 'Subject',
-            dataIndex: ['triple', 'subject'],
-            key: 'subject',
-            render: convertToDBpediaLink,
-        },
-        {
-            title: 'Relation',
-            dataIndex: ['triple', 'relation'],
-            key: 'relation',
-            render: convertRelationToDBpediaLink,
-        },
-        {
-            title: 'Object',
-            dataIndex: ['triple', 'objects'],
-            key: 'object',
-            render: convertObjectsToDBpediaLink,
-        },
-        {
-            title: 'Action',
-            dataIndex: 'result',
-            key: 'result',
-            shouldCellUpdate: () => {
-                return true;
-            },
-            render: (value, row) => {
-                if (value === 'exists') {
-                    return <RemoveModal triple={row.triple} algorithm={algorithm} />
-                } else if (value === 'conflicts') {
-                    return (<Space>
-                            <ConflictModal conflict={row.other_triples} algorithm={algorithm}/>
-                            <AddModal triple={row.triple} />
-                    </Space>)
-                } else if (value === 'possible') {
-                    return <PossibleMatchModal possibleMatches={row.other_triples} algorithm={algorithm}/>
-                } else if (value === 'none') {
-                    return <AddModal triple={row.triple} />
-                }
-
-            }
-        }
-    ];
 
     return(
         <Card>
@@ -449,29 +272,9 @@ function FactCheckerView() {
                 {/*    <Table columns={columns} dataSource={result.data.triples} scroll={{x: true}}/>*/}
                 {/*</div>}*/}
 
-                {exactMatch.length > 0 && <div style={{marginTop: '20px'}}>
-                    <Typography.Title level={4}>Exact Matches</Typography.Title>
-                    <Table columns={columns} dataSource={exactMatch} scroll={{x: true}}
-                           pagination={{hideOnSinglePage: true}}/>
-                </div>}
+                <TriplesTables algorithm={algorithm} exactMatch={exactMatch} possibleMatch={possibleMatch}
+                               conflict={conflict} unknown={unknown}/>
 
-                {possibleMatch.length > 0 && <div style={{marginTop: '20px'}}>
-                    <Typography.Title level={4}>Possible Matches</Typography.Title>
-                    <Table columns={columns} dataSource={possibleMatch} scroll={{x: true}}
-                           pagination={{hideOnSinglePage: true}}/>
-                </div>}
-
-                {conflict.length > 0 && <div style={{marginTop: '20px'}}>
-                    <Typography.Title level={4}>Conflicting Triples</Typography.Title>
-                    <Table columns={columns} dataSource={conflict} scroll={{x: true}}
-                           pagination={{hideOnSinglePage: true}}/>
-                </div>}
-
-                {unknown.length > 0 && <div style={{marginTop: '20px'}}>
-                    <Typography.Title level={4}>Unknown Triples</Typography.Title>
-                    <Table columns={columns} dataSource={unknown} scroll={{x: true}}
-                           pagination={{hideOnSinglePage: true}}/>
-                </div>}
             </Card>
 
         </Card>

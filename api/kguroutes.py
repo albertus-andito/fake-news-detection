@@ -6,7 +6,6 @@ from flask import Blueprint, request
 from definitions import ROOT_DIR, LOGGER_CONFIG_PATH
 from kgupdater import KnowledgeGraphUpdater
 
-
 kgu = KnowledgeGraphUpdater()
 kgu_api = Blueprint('kgu_api', __name__)
 
@@ -16,7 +15,7 @@ logging.config.fileConfig(LOGGER_CONFIG_PATH,
                           disable_existing_loggers=False)
 logger = logging.getLogger()
 
-updating = False # flag for update_missed_knowledge operation
+updating = False  # flag for update_missed_knowledge operation
 
 
 @kgu_api.route('/updates/status/')
@@ -131,6 +130,7 @@ def unresolved_corefering_entities():
 
     """
     return {'all_coref_entities': kgu.get_all_unresolved_corefering_entities()}, 200
+
 
 @kgu_api.route('/article-triples/insert/', methods=['POST'])
 def insert_article_triples():
@@ -441,6 +441,64 @@ def triples_from_articles():
     return {'all_triples': kgu.get_all_articles_knowledge()}, 200
 
 
+@kgu_api.route('/articles/extracted/')
+def all_extracted_article_urls():
+    """
+    Returns all articles' URLs, headlines, and dates whose triples have been extracted.
+    ---
+    tags:
+      - Knowledge Graph Updater (Articles)
+    responses:
+      200:
+        description: Array of articles URLs, headlines, and dates
+        schema:
+          id: articles
+          properties:
+            articles:
+              type: array
+              items:
+                type: object
+                properties:
+                  source:
+                    type: string
+                  headlines:
+                    type: string
+                  date:
+                    type: string
+                    description: POSIX timestamp
+    """
+    return {'articles': kgu.get_all_extracted_articles()}, 200
+
+
+@kgu_api.route('/articles/')
+def all_article_urls():
+    """
+    Returns all articles' URLs, headlines, and dates
+    ---
+    tags:
+      - Knowledge Graph Updater (Articles)
+    responses:
+      200:
+        description: Array of articles URLs, headlines, and dates
+        schema:
+          id: articles
+          properties:
+            articles:
+              type: array
+              items:
+                type: object
+                properties:
+                  source:
+                    type: string
+                  headlines:
+                    type: string
+                  date:
+                    type: string
+                    description: POSIX timestamp
+    """
+    return {'articles': kgu.get_all_articles()}, 200
+
+
 @kgu_api.route('/triples/force/', methods=['POST'])
 def force_insert_triples():
     """
@@ -611,8 +669,10 @@ def insert_triples():
     data = request.get_json()
     # Pair up the conflicts
     conflicts_list = [kgu.insert_knowledge(triple, check_conflict=True) for triple in data]
-    conflicts_pairs = [(conflicts, to_be_inserted) for (conflicts, to_be_inserted) in zip(conflicts_list, data) if conflicts is not None]
-    conflicts_pairs = [(conflict, to_be_inserted) for (conflicts, to_be_inserted) in conflicts_pairs for conflict in conflicts]
+    conflicts_pairs = [(conflicts, to_be_inserted) for (conflicts, to_be_inserted) in zip(conflicts_list, data) if
+                       conflicts is not None]
+    conflicts_pairs = [(conflict, to_be_inserted) for (conflicts, to_be_inserted) in conflicts_pairs for conflict in
+                       conflicts]
     if len(conflicts_pairs) > 0:
         conflicts_list = list()
         for (conflict, to_be_inserted) in conflicts_pairs:
@@ -722,6 +782,7 @@ def resolve_entity_equality():
     data = request.get_json()
     kgu.insert_entities_equality(data['entity_a'], data['entity_b'])
     return {'message': 'Entities have been added as the same.'}, 200
+
 
 class AsyncUpdate(threading.Thread):
     """

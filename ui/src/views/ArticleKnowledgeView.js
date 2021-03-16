@@ -180,6 +180,12 @@ function ArticleKnowledgeView() {
         </div>
     )
 
+    const extractionScopes = [
+        { label: 'Noun phrases', value: 'noun_phrases'},
+        { label: 'Named entities', value: 'named_entities'},
+        { label: 'All', value: 'all'},
+    ]
+
     const onExtractionScopeChange = (e) =>{
         setExtractionScope(e.target.value);
     }
@@ -214,11 +220,14 @@ function ArticleKnowledgeView() {
                 <Popover content={extractionScopePopoverContent} title='Extraction Scope'>
                     <Space>
                         Extraction scope:
-                        <Radio.Group value={extractionScope} onChange={onExtractionScopeChange} defaultValue='noun_phrases'>
-                            <Radio value='noun_phrases'>Noun phrases</Radio>
-                            <Radio value='named_entities'>Named entities</Radio>
-                            <Radio value='all'>All</Radio>
-                        </Radio.Group>
+                        <Radio.Group
+                            options={extractionScopes}
+                            value={extractionScope}
+                            onChange={onExtractionScopeChange}
+                            defaultValue='noun_phrases'
+                            optionType='button'
+                            buttonStyle='solid'
+                        />
                     </Space>
                 </Popover>
                 <Button

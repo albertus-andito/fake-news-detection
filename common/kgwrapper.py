@@ -85,17 +85,21 @@ class KnowledgeGraphWrapper:
         :return: True if triple exists, False otherwise
         :rtype: bool
         """
+        if relation.startswith("http://") and not relation.startswith("http://dbpedia.org/ontology"):
+            relation_query = "<" + relation + ">"
+        else:
+            relation_query = "dbo:{}".format(urllib.parse.quote(relation.rsplit('/')[-1]))
         # obj_query = obj.rsplit('/')[-1]
-        if obj.startswith("http://dbpedia.org/resource"):
+        if obj.startswith("http://"):
             obj_query = "<" + obj + ">"
         else:
             obj_query = '"{}"'.format(obj)
         query = """
                 PREFIX : <http://dbpedia.org/resource/>
                 ASK {{
-                  <{0}> dbo:{1} {2} .
+                  <{0}> {1} {2} .
                 }}
-                """.format(subject, urllib.parse.quote(relation.rsplit('/')[-1]), obj_query)
+                """.format(subject, relation_query, obj_query)
         if transitive:
             query = "DEFINE input:same-as \"yes\"" + query
         self.sparql.setQuery(query)

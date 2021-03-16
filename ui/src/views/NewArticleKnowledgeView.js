@@ -58,6 +58,7 @@ function NewArticleKnowledgeView() {
                  >
                      <Radio.Group
                         options={extractionScopes}
+                        defaultValue='noun_phrases'
                         optionType='button'
                         buttonStyle='solid'
                      />
@@ -68,6 +69,7 @@ function NewArticleKnowledgeView() {
                  >
                      <Radio.Group
                         options={autoUpdateOptions}
+                        defaultValue={false}
                         optionType='button'
                         buttonStyle='solid'
                      />

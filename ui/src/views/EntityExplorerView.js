@@ -1,31 +1,13 @@
 import {Button, Card, Form, Input, Table, Typography} from "antd";
 import React, {useState} from "react";
 import axios from "axios";
-import {convertObjectsToDBpediaLink, convertRelationToDBpediaLink, convertToDBpediaLink} from "../utils";
+import {tripleColumns} from "../utils";
 import RemoveModal from "../components/RemoveModal";
 
 function EntityExplorerView() {
     const [triples, setTriples] = useState();
 
-    let columns = [
-        {
-            title: 'Subject',
-            dataIndex: 'subject',
-            key: 'subject',
-            render: convertToDBpediaLink,
-        },
-        {
-            title: 'Relation',
-            dataIndex: 'relation',
-            key: 'relation',
-            render: convertRelationToDBpediaLink,
-        },
-        {
-            title: 'Object',
-            dataIndex: 'objects',
-            key: 'object',
-            render: convertObjectsToDBpediaLink,
-        },
+    let action = [
         {
             title: 'Action',
             key: 'action',
@@ -62,7 +44,7 @@ function EntityExplorerView() {
                 </Form.Item>
             </Form>
 
-            <Table dataSource={triples} columns={columns}>
+            <Table dataSource={triples} columns={[...tripleColumns, ...action]}>
 
             </Table>
         </Card>

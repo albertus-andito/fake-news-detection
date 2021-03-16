@@ -1,12 +1,51 @@
-import {Alert, Button, Card, Divider, Form, Input, Typography} from "antd";
+import {Alert, Button, Card, Divider, Form, Input, Modal, Table, Typography} from "antd";
 import axios from "axios";
 import React, { useState } from 'react';
 import showErrorModal from "../components/ShowErrorModal";
 import TriplesFormInput from "../components/TriplesFormInput";
+import {showErrorNotification, tripleColumns} from "../utils";
+import {ExclamationCircleOutlined} from "@ant-design/icons";
+import RemoveModal from "../components/RemoveModal";
+
+const { confirm } =  Modal;
 
 function AddTriplesForm() {
     const [isLoading, setIsLoading] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
+
+    const action = [{
+            title: 'Action',
+            dataIndex: 'result',
+            key: 'result',
+            shouldCellUpdate: () => {
+                return true;
+            },
+            render: (value, row) => {
+                console.log(row)
+                return <RemoveModal triple={{subject: row.subject, relation: row.relation, objects: row.objects}}
+                        algorithm={'non-exact'}/>
+            }
+        }]
+
+    const showConflicts = (triple, conflicts) => {
+        confirm({
+            title: 'This triple has the following conflict. Do you still want to add this triple?',
+            icon: <ExclamationCircleOutlined />,
+            content: <Table columns={[...tripleColumns, ...action]} dataSource={conflicts}
+                            pagination={{hideOnSinglePage: true}} scroll={{x: true}} />,
+            onOk() {
+                axios.post(`/kgu/triples/force/`, triple)
+                    .then(response => {
+                        setIsSuccess(true);
+                        setIsLoading(false);
+                    })
+                    .catch(error => {
+                        setIsLoading(false);
+                        showErrorNotification(error.response.data)
+                    })
+            }
+        })
+    }
 
     const onSubmit = (values) => {
         if (!values.triples || values.triples.length == 0) {
@@ -23,7 +62,10 @@ function AddTriplesForm() {
                 .catch(error => {
                     setIsLoading(false);
                     if (error.response.status == 409) {
-                        console.log(error.response.data)
+                        const conflicts = error.response.data.conflicts.map((conflict) => {
+                            return conflict.inKnowledgeGraph;
+                        })
+                        showConflicts(values.triples, conflicts);
                     }
                 });
         }

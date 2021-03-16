@@ -51,7 +51,7 @@ class ArticleScraper(ABC):
         """
         Saves article to DB.
         :param article: News article text
-        :type article: str
+        :type article: dict
         """
         try:
             self.db_collection.update_one({'source': article['source']}, {'$set': article}, upsert=True)
@@ -78,6 +78,8 @@ class BbcScraper(ArticleScraper):
             headlines = soup.find(id='main-heading').text
         elif soup.find('h1', {'class': 'qa-story-headline-hidden'}) is not None:  # for sport news
             headlines = soup.find('h1', {'class': 'qa-story-headline-hidden'}).text
+        elif soup.find('h1') is not None:
+            headlines = soup.find('h1').text
         else:
             headlines = None
 
@@ -97,7 +99,7 @@ class BbcScraper(ArticleScraper):
             div = soup.find('div', {'class': 'qa-story-body'})  # for sport news
             text_elements = div.find_all('p')
 
-        texts = ' '.join([elem.text for elem in text_elements])
+        texts = headlines + '. ' + ' '.join([elem.text for elem in text_elements])
         return {
             'headlines': [headlines],
             'date': date,
@@ -123,20 +125,22 @@ class IndependentScraper(ArticleScraper):
         soup = BeautifulSoup(page.content, 'html.parser')
 
         header = soup.find(id='articleHeader')
+        headlines = [header.find('h1').text, header.find('h2').text]
         if header is None:
             header = soup  # for IndyLife or Travel
         if header.find('amp-timeago') is not None:
-            date = datetime.fromisoformat(header.find('amp-timeago')['datetime'].replace("Z", "+00:00")),
+            date = datetime.fromisoformat(header.find('amp-timeago')['datetime'].replace("Z", "+00:00"))
         else:
             date = None
         content = soup.find(id='main')
+        texts = '. '.join(headlines)
         if content is not None:
             text_elements = content.find_all('p')
-            texts = ' '.join([elem.text for elem in text_elements])
+            texts += '. ' + ' '.join([elem.text for elem in text_elements])
         else:
             texts = None
         return {
-            'headlines': [header.find('h1').text, header.find('h2').text],
+            'headlines': headlines,
             'date': date,
             'texts': texts,
             'source': url
@@ -164,12 +168,15 @@ class GuardianScraper(ArticleScraper):
         else:
             api_url = url
         payload = {'api-key': self.api_key, 'show-fields': 'headline,body,trailText'}
+        # FIXME: try catch exception
         response = requests.get(api_url, params=payload).json()['response']
         if response['status'] == 'ok':
             content = response['content']
+            headlines = [content['fields']['headline'], content['fields']['trailText']]
             soup = BeautifulSoup(content['fields']['body'], 'html.parser')
             text_elements = soup.find_all('p')
-            texts = ' '.join([elem.text for elem in text_elements])
+            texts = '. '.join(headlines)
+            texts += '.' + ' '.join([elem.text for elem in text_elements])
             return {
                 'headlines': [content['fields']['headline'], content['fields']['trailText']],
                 'date': datetime.fromisoformat(content['webPublicationDate'].replace("Z", "+00:00")),
@@ -194,10 +201,11 @@ class GenericScraper(ArticleScraper):
         session = HTMLSession()
         page = session.get(url)
         soup = BeautifulSoup(page.content, 'html.parser')
-        ps = soup.find_all('p')
-        text = ''
-        for p in ps:
-            text += p.getText()
+        text = soup.find_all(text=True)
+        # ps = soup.find_all('p')
+        # text = ''
+        # for p in ps:
+        #     text += ' ' + p.getText()
         return {
             'headlines': '',
             'date': '',
@@ -210,13 +218,13 @@ class GenericScraper(ArticleScraper):
 
 if __name__ == '__main__':
     # bbc = BbcScraper()
-    # independent = IndependentScraper()
+    independent = IndependentScraper()
     # guardian = GuardianScraper()
     #
     # bbc.execute("https://www.bbc.co.uk/news/world-us-canada-55210243")
-    # independent.execute("https://www.independent.co.uk/news/science/archaeology/oxford-archaeology-dig-skeleton-hertfordshire-b1767027.html")
+    independent.execute("https://www.independent.co.uk/news/science/archaeology/oxford-archaeology-dig-skeleton-hertfordshire-b1767027.html")
     # guardian.execute("https://www.theguardian.com/business/2020/dec/15/barclays-fined-fca-covid-crisis")
 
-    generic = GenericScraper()
-    res = generic.scrape('https://news.sky.com/story/recommended-1-pay-rise-for-nhs-staff-labelled-pitiful-by-nursing-union-12235986')
-    print(res)
+    # generic = GenericScraper()
+    # res = generic.scrape('https://news.sky.com/story/recommended-1-pay-rise-for-nhs-staff-labelled-pitiful-by-nursing-union-12235986')
+    # print(res)

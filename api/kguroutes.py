@@ -470,6 +470,40 @@ def all_extracted_article_urls():
     return {'articles': kgu.get_all_extracted_articles()}, 200
 
 
+@kgu_api.route('/articles/', methods=['POST'])
+def new_article():
+    """
+    Send new article to be extracted and stored in DB
+    ---
+    tags:
+      - Knowledge Graph Updater (Articles)
+    parameters:
+      - in: body
+        name: new_article
+        schema:
+          id: new_article
+          type: object
+          properties:
+            url:
+              type: string
+            extraction_scope:
+              type: string
+              enum: [noun_phrases, named_entities, all]
+            kg_auto_update:
+              type: boolean
+    responses:
+      200:
+        schema:
+          id: standard_message
+    """
+    request_data = request.get_json()
+    url = request_data['url']
+    extraction_scope = request_data['extraction_scope']
+    kg_auto_update = request_data['kg_auto_update']
+    kgu.extract_new_article(url, extraction_scope=extraction_scope, kg_auto_update=kg_auto_update)
+    return {'message': 'Triples have been extracted from the article and stored in DB.'}, 200
+
+
 @kgu_api.route('/articles/')
 def all_article_urls():
     """

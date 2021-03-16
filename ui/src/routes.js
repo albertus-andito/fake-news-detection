@@ -5,6 +5,7 @@ import FactCheckerView from "./views/FactCheckerView";
 import ArticleKnowledgeView from "./views/ArticleKnowledgeView";
 import EntityExplorerView from "./views/EntityExplorerView";
 import AddOwnKnowledgeView from "./views/AddOwnKnowledgeView";
+import NewArticleKnowledgeView from "./views/NewArticleKnowledgeView";
 // import { Navigate,  } from 'react-router-dom';
 
 const routes = [
@@ -14,6 +15,7 @@ const routes = [
         children: [
             { path: 'fact-checker', element: <FactCheckerView />},
             { path: 'article-knowledge', element: <ArticleKnowledgeView />},
+            { path: 'new-article', element: <NewArticleKnowledgeView />},
             { path: 'own-knowledge', element: <AddOwnKnowledgeView />},
             { path: 'entity-explorer', element: <EntityExplorerView />},
             { path: '/', element: <HomeView />},

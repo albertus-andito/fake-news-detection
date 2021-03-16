@@ -10,7 +10,7 @@ from entitycorefresolver import EntityCorefResolver
 from kgwrapper import KnowledgeGraphWrapper
 from triple import Triple
 from tripleproducer import TripleProducer
-
+from common.utils import scrape_text_from_url
 
 # TODO: Haven't considered the headlines, only the texts for now. Might want to include the headlines to be extracted.
 
@@ -59,20 +59,21 @@ class KnowledgeGraphUpdater:
         """
         for article in self.db_article_collection.find({'triples': None}):
             try:
-                self.logger.info('Extracting triples for article: %s', article['source'])
-                # set 'added' to False for all triples initially
-                triples = [{'sentence': results[0],
-                            'triples': [{**triple.to_dict(), **{'added': False}} for triple in results[1]]}
-                           for results in self.triple_producer.produce_triples(article['texts'],
-                                                                               extraction_scope=extraction_scope)]
+                self.__extract_and_save_triples(article['source'], article['texts'], extraction_scope, kg_auto_update)
+                # self.logger.info('Extracting triples for article: %s', article['source'])
+                # # set 'added' to False for all triples initially
+                # triples = [{'sentence': results[0],
+                #             'triples': [{**triple.to_dict(), **{'added': False}} for triple in results[1]]}
+                #            for results in self.triple_producer.produce_triples(article['texts'],
+                #                                                                extraction_scope=extraction_scope)]
 
-                conflicted_triples = []
-                for sentence in triples:
-                    for triple in sentence['triples']:
-                        exists = self.knowledge_graph.check_triple_object_existence(Triple.from_dict(triple))
-                        # The exact triple already exists in the KG. Mark as added.
-                        if exists is True:
-                            triple['added'] = True
+                # conflicted_triples = []
+                # for sentence in triples:
+                #     for triple in sentence['triples']:
+                #         exists = self.knowledge_graph.check_triple_object_existence(Triple.from_dict(triple))
+                #         # The exact triple already exists in the KG. Mark as added.
+                #         if exists is True:
+                #             triple['added'] = True
                         # check for conflict
                 #         else:
                 #             conflicts = self.knowledge_graph.get_triples(triple['subject'], triple['relation'])
@@ -85,15 +86,15 @@ class KnowledgeGraphUpdater:
                 #
                 # self.logger.debug('Found conflicts for article %s: %s', article['source'], conflicted_triples)
 
-                self.db_article_collection.update_one({'source': article['source']}, {'$set': {'triples': triples}})
+                # self.db_article_collection.update_one({'source': article['source']}, {'$set': {'triples': triples}})
 
                 # if len(conflicted_triples) > 0:  # save conflicts
                 #     self.db_article_collection.update_one({'source': article['source']},
                 #                                           {'$set': {'conflicts': conflicted_triples}})
 
-                if (kg_auto_update is None and self.auto_update) or kg_auto_update:
-                    self.logger.info('Inserting non conflicting knowledge for ' + article['source'])
-                    self.insert_all_nonconflicting_knowledge(article['source'])
+                # if (kg_auto_update is None and self.auto_update) or kg_auto_update:
+                #     self.logger.info('Inserting non conflicting knowledge for ' + article['source'])
+                #     self.insert_all_nonconflicting_knowledge(article['source'])
 
                 # # Get all DBpedia entities from the article's triples
                 # entities = []
@@ -120,7 +121,27 @@ class KnowledgeGraphUpdater:
             except Exception as e:
                 self.logger.error("Exception occured when extracting article " + article['source'] + ": " + e.__str__())
 
-    # FIXME
+    def __extract_and_save_triples(self, url, texts, extraction_scope, kg_auto_update):
+        self.logger.info('Extracting triples for article: %s', url)
+        # set 'added' to False for all triples initially
+        triples = [{'sentence': results[0],
+                    'triples': [{**triple.to_dict(), **{'added': False}} for triple in results[1]]}
+                   for results in self.triple_producer.produce_triples(texts,
+                                                                       extraction_scope=extraction_scope)]
+        for sentence in triples:
+            for triple in sentence['triples']:
+                exists = self.knowledge_graph.check_triple_object_existence(Triple.from_dict(triple))
+                # The exact triple already exists in the KG. Mark as added.
+                if exists is True:
+                    triple['added'] = True
+
+        self.db_article_collection.update_one({'source': url}, {'$set': {'triples': triples}})
+
+        if (kg_auto_update is None and self.auto_update) or kg_auto_update:
+            self.logger.info('Inserting non conflicting knowledge for ' + url)
+            self.insert_all_nonconflicting_knowledge(url)
+
+
     def insert_all_nonconflicting_knowledge(self, article_url):
         """
         Insert non-conflicting triples of an article to the knowledge graph.
@@ -470,6 +491,13 @@ class KnowledgeGraphUpdater:
                 'date': article['date'].timestamp()
             })
         return articles
+
+    def extract_new_article(self, url, extraction_scope='noun_phrases', kg_auto_update=False):
+        article = scrape_text_from_url(url, save_to_db=True)
+        try:
+            self.__extract_and_save_triples(url, article, extraction_scope, kg_auto_update)
+        except Exception as e:
+            self.logger.error("Exception occured when extracting article " + url + ": " + e.__str__())
 
     def get_all_extracted_articles(self):
         """

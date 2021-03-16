@@ -1,5 +1,7 @@
 import logging
 import os
+import urllib.parse
+
 from dotenv import load_dotenv
 from pathlib import Path
 from SPARQLWrapper import SPARQLWrapper, JSON, POST
@@ -93,7 +95,7 @@ class KnowledgeGraphWrapper:
                 ASK {{
                   <{0}> dbo:{1} {2} .
                 }}
-                """.format(subject, relation.rsplit('/')[-1], obj_query)
+                """.format(subject, urllib.parse.quote(relation.rsplit('/')[-1]), obj_query)
         if transitive:
             query = "DEFINE input:same-as \"yes\"" + query
         self.sparql.setQuery(query)
@@ -124,7 +126,7 @@ class KnowledgeGraphWrapper:
                 SELECT ?o WHERE{{
                 <{0}> dbo:{1} ?o .
                 }}
-                """.format(subject, relation.rsplit('/')[-1])
+                """.format(subject, urllib.parse.quote(relation.rsplit('/')[-1]))
         if transitive:
             query = "DEFINE input:same-as \"yes\"" + query
         self.sparql.setQuery(query)

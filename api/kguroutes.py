@@ -6,7 +6,6 @@ from flask import Blueprint, request
 from definitions import ROOT_DIR, LOGGER_CONFIG_PATH
 from kgupdater import KnowledgeGraphUpdater
 
-
 kgu = KnowledgeGraphUpdater()
 kgu_api = Blueprint('kgu_api', __name__)
 
@@ -16,7 +15,7 @@ logging.config.fileConfig(LOGGER_CONFIG_PATH,
                           disable_existing_loggers=False)
 logger = logging.getLogger()
 
-updating = False # flag for update_missed_knowledge operation
+updating = False  # flag for update_missed_knowledge operation
 
 
 @kgu_api.route('/updates/status/')
@@ -132,6 +131,7 @@ def unresolved_corefering_entities():
     """
     return {'all_coref_entities': kgu.get_all_unresolved_corefering_entities()}, 200
 
+
 @kgu_api.route('/article-triples/insert/', methods=['POST'])
 def insert_article_triples():
     """
@@ -189,92 +189,92 @@ def delete_all_article_triples(source):
     return {'source': source, 'message': 'All triples deleted.'}, 200
 
 
-@kgu_api.route('/article-triples/conflicts/<path:source>')
-def conflicts_from_article(source):
-    """
-    Returns triples from the specified article that have conflicts with the knowledge graph.
-    ---
-    tags:
-      - Knowledge Graph Updater (Articles)
-    definitions:
-      conflicted_triples:
-        type: object
-        properties:
-          source:
-            type: string
-          conflicts:
-            type: array
-            description: array of conflicted triples extracted from the article
-            items:
-              type: object
-              properties:
-                toBeInserted:
-                  type: object
-                  properties:
-                    subject:
-                      type: string
-                    relation:
-                      type: string
-                    objects:
-                      type: array
-                      items:
-                        type: string
-                inKnowledgeGraph:
-                  type: object
-                  properties:
-                    subject:
-                      type: string
-                    relation:
-                      type: string
-                    objects:
-                      type: array
-                      items:
-                        type: string
-                added:
-                  type: boolean
-                  description: whether the conflicted triple was added to the knowledge graph at some point
-    parameters:
-      - name: source
-        in: path
-        description: URL of article whose conflicted triples are going to be retrieved.
-        type: string
-        required: true
-    responses:
-      200:
-        description: Conflicted triples of the article returned successfully
-        schema:
-          $ref: '#/definitions/conflicted_triples'
-      404:
-        description: No conflicted triples for the specified article are not found.
-        schema:
-          id: article_url_with_message
-    """
-    conflicts = kgu.get_article_conflicts(source)
-    if conflicts is None:
-        return {'source': source, 'message': 'No conflicts found for this article'}, 404
-    return {'source': source, 'conflicts': conflicts}, 200
+# @kgu_api.route('/article-triples/conflicts/<path:source>')
+# def conflicts_from_article(source):
+#     """
+#     Returns triples from the specified article that have conflicts with the knowledge graph.
+#     ---
+#     tags:
+#       - Knowledge Graph Updater (Articles)
+#     definitions:
+#       conflicted_triples:
+#         type: object
+#         properties:
+#           source:
+#             type: string
+#           conflicts:
+#             type: array
+#             description: array of conflicted triples extracted from the article
+#             items:
+#               type: object
+#               properties:
+#                 toBeInserted:
+#                   type: object
+#                   properties:
+#                     subject:
+#                       type: string
+#                     relation:
+#                       type: string
+#                     objects:
+#                       type: array
+#                       items:
+#                         type: string
+#                 inKnowledgeGraph:
+#                   type: object
+#                   properties:
+#                     subject:
+#                       type: string
+#                     relation:
+#                       type: string
+#                     objects:
+#                       type: array
+#                       items:
+#                         type: string
+#                 added:
+#                   type: boolean
+#                   description: whether the conflicted triple was added to the knowledge graph at some point
+#     parameters:
+#       - name: source
+#         in: path
+#         description: URL of article whose conflicted triples are going to be retrieved.
+#         type: string
+#         required: true
+#     responses:
+#       200:
+#         description: Conflicted triples of the article returned successfully
+#         schema:
+#           $ref: '#/definitions/conflicted_triples'
+#       404:
+#         description: No conflicted triples for the specified article are not found.
+#         schema:
+#           id: article_url_with_message
+#     """
+#     conflicts = kgu.get_article_conflicts(source)
+#     if conflicts is None:
+#         return {'source': source, 'message': 'No conflicts found for this article'}, 404
+#     return {'source': source, 'conflicts': conflicts}, 200
 
 
-@kgu_api.route('/article-triples/conflicts/')
-def conflicts_from_articles():
-    """
-    Returns all conflicted triples from all scraped articles.
-    ---
-    tags:
-      - Knowledge Graph Updater (Articles)
-    responses:
-      200:
-        description: Conflicted triples of all articles returned successfully
-        schema:
-          id: all_conflicted_triples
-          type: object
-          properties:
-            all_conflicts:
-              type: array
-              items:
-                $ref: '#/definitions/conflicted_triples'
-    """
-    return {'all_conflicts': kgu.get_all_article_conflicts()}, 200
+# @kgu_api.route('/article-triples/conflicts/')
+# def conflicts_from_articles():
+#     """
+#     Returns all conflicted triples from all scraped articles.
+#     ---
+#     tags:
+#       - Knowledge Graph Updater (Articles)
+#     responses:
+#       200:
+#         description: Conflicted triples of all articles returned successfully
+#         schema:
+#           id: all_conflicted_triples
+#           type: object
+#           properties:
+#             all_conflicts:
+#               type: array
+#               items:
+#                 $ref: '#/definitions/conflicted_triples'
+#     """
+#     return {'all_conflicts': kgu.get_all_article_conflicts()}, 200
 
 
 @kgu_api.route('/article-triples/pending/<path:source>')
@@ -439,6 +439,98 @@ def triples_from_articles():
         """
     # TODO: add pagination
     return {'all_triples': kgu.get_all_articles_knowledge()}, 200
+
+
+@kgu_api.route('/articles/extracted/')
+def all_extracted_article_urls():
+    """
+    Returns all articles' URLs, headlines, and dates whose triples have been extracted.
+    ---
+    tags:
+      - Knowledge Graph Updater (Articles)
+    responses:
+      200:
+        description: Array of articles URLs, headlines, and dates
+        schema:
+          id: articles
+          properties:
+            articles:
+              type: array
+              items:
+                type: object
+                properties:
+                  source:
+                    type: string
+                  headlines:
+                    type: string
+                  date:
+                    type: string
+                    description: POSIX timestamp
+    """
+    return {'articles': kgu.get_all_extracted_articles()}, 200
+
+
+@kgu_api.route('/articles/', methods=['POST'])
+def new_article():
+    """
+    Send new article to be extracted and stored in DB
+    ---
+    tags:
+      - Knowledge Graph Updater (Articles)
+    parameters:
+      - in: body
+        name: new_article
+        schema:
+          id: new_article
+          type: object
+          properties:
+            url:
+              type: string
+            extraction_scope:
+              type: string
+              enum: [noun_phrases, named_entities, all]
+            kg_auto_update:
+              type: boolean
+    responses:
+      200:
+        schema:
+          id: standard_message
+    """
+    request_data = request.get_json()
+    url = request_data['url']
+    extraction_scope = request_data['extraction_scope']
+    kg_auto_update = request_data['kg_auto_update']
+    kgu.extract_new_article(url, extraction_scope=extraction_scope, kg_auto_update=kg_auto_update)
+    return {'message': 'Triples have been extracted from the article and stored in DB.'}, 200
+
+
+@kgu_api.route('/articles/')
+def all_article_urls():
+    """
+    Returns all articles' URLs, headlines, and dates
+    ---
+    tags:
+      - Knowledge Graph Updater (Articles)
+    responses:
+      200:
+        description: Array of articles URLs, headlines, and dates
+        schema:
+          id: articles
+          properties:
+            articles:
+              type: array
+              items:
+                type: object
+                properties:
+                  source:
+                    type: string
+                  headlines:
+                    type: string
+                  date:
+                    type: string
+                    description: POSIX timestamp
+    """
+    return {'articles': kgu.get_all_articles()}, 200
 
 
 @kgu_api.route('/triples/force/', methods=['POST'])
@@ -611,8 +703,10 @@ def insert_triples():
     data = request.get_json()
     # Pair up the conflicts
     conflicts_list = [kgu.insert_knowledge(triple, check_conflict=True) for triple in data]
-    conflicts_pairs = [(conflicts, to_be_inserted) for (conflicts, to_be_inserted) in zip(conflicts_list, data) if conflicts is not None]
-    conflicts_pairs = [(conflict, to_be_inserted) for (conflicts, to_be_inserted) in conflicts_pairs for conflict in conflicts]
+    conflicts_pairs = [(conflicts, to_be_inserted) for (conflicts, to_be_inserted) in zip(conflicts_list, data) if
+                       conflicts is not None]
+    conflicts_pairs = [(conflict, to_be_inserted) for (conflicts, to_be_inserted) in conflicts_pairs for conflict in
+                       conflicts]
     if len(conflicts_pairs) > 0:
         conflicts_list = list()
         for (conflict, to_be_inserted) in conflicts_pairs:
@@ -722,6 +816,7 @@ def resolve_entity_equality():
     data = request.get_json()
     kgu.insert_entities_equality(data['entity_a'], data['entity_b'])
     return {'message': 'Entities have been added as the same.'}, 200
+
 
 class AsyncUpdate(threading.Thread):
     """

@@ -7,3 +7,10 @@ cd neuralcoref
 pip install -r requirements.txt
 pip install -e .
 ```
+
+### Run StanfordCoreNLP
+```
+java -mx4g -cp "*" edu.stanford.nlp.pipeline.StanfordCoreNLPServer \
+-preload tokenize,ssplit,pos,lemma,depparse,natlog,openie \
+-port 9000 -timeout 15000
+```

@@ -1,13 +1,11 @@
 import {Modal} from "antd";
 
-const showErrorModal = (message) => {
+function showErrorModal(message) {
     Modal.error({
         title: 'Error!',
-        content: (
-            <div>
+        content:
                 {message}
-            </div>
-        ),
+        ,
         onOk() {
             Modal.destroyAll();
         }

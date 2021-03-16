@@ -17,7 +17,7 @@ class NonExactMatchFactChecker(FactChecker):
         super().__init__()
         self.coref_resolver = EntityCorefResolver()
 
-    def fact_check(self, article):
+    def fact_check(self, article, extraction_scope):
         """
         Fact check the given text, by first extracting the triples and then infer the existence of the triples in the
         knowledge graph.
@@ -27,16 +27,21 @@ class NonExactMatchFactChecker(FactChecker):
         Truthfulness score is calculated by dividing the number of inferred triples found by the number of all triples.
         :param article: article text
         :type article: str
+        :param extraction_scope: The scope of the extraction, deciding whether it should include only relations between
+        'named_entities', 'noun_phrases', or 'all'.
+        :type extraction_scope: str
         :return: a tuple of fact check result (sentence, triples, and their existence) and the truthfulness score
         :rtype: tuple
         """
-        article_triples = self.get_triples(article)
+        article_triples = self.get_triples(article, extraction_scope)
         entity_clusters = self.coref_resolver.get_coref_clusters(article)
-        fc_result = [(sentence, {result[0]: result[1] for result in self.better_fact_check(triple, entity_clusters)})
-                     for (sentence, triples) in article_triples for triple in triples]
-        truth_values = [sum(triples.values()) for sentence, triples in fc_result]
-        truthfulness = sum(truth_values) / len(truth_values)
-        return fc_result, truthfulness
+        # fc_result = [(sentence, {result[0]: result[1] for result in self.non_exact_fact_check(triple, entity_clusters)})
+        #              for (sentence, triples) in article_triples for triple in triples]
+        fc_result = [(sentence, {triple: self.non_exact_fact_check(triple, entity_clusters)
+                                 for triple in triples}) for (sentence, triples) in article_triples]
+        # truth_values = [sum(triples.values()) for sentence, triples in fc_result]
+        # truthfulness = sum(truth_values) / len(truth_values)
+        return fc_result
 
     def fact_check_triples(self, triples):
         """
@@ -51,13 +56,14 @@ class NonExactMatchFactChecker(FactChecker):
         :return: a tuple of fact check result (triples and their existence) and the truthfulness score
         :rtype: tuple
         """
-        fc_result = [{result[0]: result[1] for result in self.better_fact_check(triple)}
-                     for triple in triples]
-        truth_values = [sum(triples.values()) for triples in fc_result]
-        truthfulness = sum(truth_values) / len(truth_values) if len(fc_result) > 0 else 0
-        return fc_result, truthfulness
+        # fc_result = [{result[0]: result[1] for result in self.non_exact_fact_check(triple)}
+        #              for triple in triples]
+        fc_result = {triple: self.non_exact_fact_check(triple) for triple in triples}
+        # truth_values = [sum(triples.values()) for triples in fc_result]
+        # truthfulness = sum(truth_values) / len(truth_values) if len(fc_result) > 0 else 0
+        return fc_result
 
-    def better_fact_check(self, original_triple, entity_clusters=None):
+    def non_exact_fact_check(self, original_triple, entity_clusters=[]):
         """
         Check whether the triple or the "related triples" exist in the knowledge graph or not.
         Related triples are:
@@ -71,42 +77,62 @@ class NonExactMatchFactChecker(FactChecker):
         :return: a tuple of the triple and its existence, if found in the knowledge graph. None, otherwise.
         :rtype: tuple
         """
+        original_exists = self.knowledge_graph.check_triple_object_existence(original_triple, transitive=True)
+        if original_exists is True:
+            return 'exists', []
+        conflicts = self.knowledge_graph.get_triples(original_triple.subject, original_triple.relation)
+        if conflicts is not None:
+            return 'conflicts', conflicts
+
         triples = [original_triple]
-        if entity_clusters is not None:
-            # get corefering mentions of subject and objects
-            corefs_subject = entity_clusters.get(original_triple.subject)
-            corefs_objects = [entity_clusters.get(obj) for obj in original_triple.objects]
-            corefs_objects = list(filter(None, corefs_objects))
+        if len(entity_clusters) > 0:
+            triples = self.__create_triples_from_coreference(original_triple, entity_clusters)
 
-            # extend triples with the combination of corefering mentions of subject and objects
-            if corefs_subject is not None:
-                triples.extend(
-                    [Triple(coref, original_triple.relation, original_triple.objects) for coref in corefs_subject])
-            if len(corefs_objects) > 0:
-                triples.extend(
-                    [Triple(original_triple.subject, original_triple.relation, [coref]) for obj in corefs_objects
-                     for coref in obj])
-            if corefs_subject is not None and len(corefs_objects) > 0:
-                for coref_s in corefs_subject:
-                    for obj in corefs_objects:
-                        triples.extend([Triple(coref_s, original_triple.relation, coref_o) for coref_o in obj])
-
+        possibilities = []
         for triple in triples:
             # check original triple
-            original_exists = self.knowledge_graph.check_triple_object_existence(triple)
+            original_exists = self.knowledge_graph.check_triple_object_existence(triple, transitive=True)
             if original_exists is True:
-                return [(triple, original_exists)]
+                possibilities.append(triple)
+                break
+            conflicts = self.knowledge_graph.get_triples(triple.subject, triple.relation, transitive=True)
+            if conflicts is not None:
+                return 'conflicts', conflicts
             # check triple with opposite relation (Object - Relation - Subject)
-            opposite_exists = self.knowledge_graph.check_triple_object_opposite_relation_existence(triple)
-            opposite_triple = Triple(triple.subject, 'is ' + triple.relation + ' of', triple.objects)
+            opposite_exists = self.knowledge_graph.check_triple_object_opposite_relation_existence(triple, transitive=True)
+            opposite_triple = [Triple(obj, triple.relation, [triple.subject]) for obj in triple.objects]
             if opposite_exists is True:
-                return [(opposite_triple, opposite_exists)]
+                possibilities.extend(opposite_triple)
             # check triple with the synonyms of its relation
             synonym_result = self.check_relation_synonyms(triple)
             if synonym_result is not None:
-                return [(triple, original_exists), synonym_result]
+                possibilities.extend(synonym_result)
+        if len(possibilities) > 0:
+            return 'possible', possibilities
 
-        return [(original_triple, False)]
+        return 'none', []
+
+    def __create_triples_from_coreference(self, triple, entity_clusters):
+        triples = [triple]
+        # get corefering mentions of subject and objects
+        corefs_subject = entity_clusters.get(triple.subject)
+        corefs_objects = [entity_clusters.get(obj) for obj in triple.objects]
+        corefs_objects = list(filter(None, corefs_objects))
+
+        # extend triples with the combination of corefering mentions of subject and objects
+        if corefs_subject is not None:
+            triples.extend(
+                [Triple(coref, triple.relation, triple.objects) for coref in corefs_subject])
+        if len(corefs_objects) > 0:
+            triples.extend(
+                [Triple(triple.subject, triple.relation, [coref]) for obj in corefs_objects
+                 for coref in obj])
+        if corefs_subject is not None and len(corefs_objects) > 0:
+            for coref_s in corefs_subject:
+                for obj in corefs_objects:
+                    triples.extend([Triple(coref_s, triple.relation, coref_o) for coref_o in obj])
+
+        return triples
 
     def check_relation_synonyms(self, triple):
         """
@@ -115,7 +141,7 @@ class NonExactMatchFactChecker(FactChecker):
         Note that it also checks the opposite relation (Object - Relation - Subject).
         :param triple: triple of type triple.Triple
         :type triple: triple.Triple
-        :return: a tuple of the triple and its existence, if found in the knowledge graph. None, otherwise.
+        :return: the triple, if found in the knowledge graph. None, otherwise.
         :rtype: tuple
         """
         relation = triple.relation.replace('http://dbpedia.org/ontology/', '')
@@ -125,13 +151,13 @@ class NonExactMatchFactChecker(FactChecker):
                 if lemma.name() != relation:
                     dbpedia_lemma = convert_to_dbpedia_ontology(lemma.name())
                     synonym_triple = Triple(triple.subject, dbpedia_lemma, triple.objects)
-                    exists = self.knowledge_graph.check_triple_object_existence(synonym_triple)
+                    exists = self.knowledge_graph.check_triple_object_existence(synonym_triple, transitive=True)
                     if exists:
-                        return synonym_triple, exists
+                        return [synonym_triple]
                     opposite_exists = self.knowledge_graph.check_triple_object_opposite_relation_existence(
-                        synonym_triple)
+                        synonym_triple, transitive=True)
                     if opposite_exists:
-                        return Triple(triple.subject, 'is ' + dbpedia_lemma + ' of', triple.objects), opposite_exists
+                        return [Triple(obj, dbpedia_lemma, [triple.subject]) for obj in triple.objects]
 
 
 import pprint

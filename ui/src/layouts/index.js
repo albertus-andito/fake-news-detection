@@ -22,6 +22,9 @@ function AppLayout() {
                         <Menu.Item key='/article-knowledge'>
                             Pending Article Knowledge<Link to='/article-knowledge'></Link>
                         </Menu.Item>
+                        <Menu.Item key='/new-article'>
+                            Add New Article<Link to='/new-article'></Link>
+                        </Menu.Item>
                         <Menu.Item key='/own-knowledge'>
                             Add Own Knowledge<Link to='/own-knowledge'></Link>
                         </Menu.Item>

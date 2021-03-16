@@ -1,30 +1,64 @@
-import {Button, Card, Form, Input, Radio, Space, Spin, Statistic, Table, Tag, Typography} from 'antd';
-import React, { useState } from 'react';
+import {
+    Alert,
+    Button,
+    Card,
+    Form,
+    Input,
+    Modal,
+    notification,
+    Radio,
+    Space,
+    Spin,
+    Statistic,
+    Table,
+    Tag,
+    Typography
+} from 'antd';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { CheckCircleOutlined } from '@ant-design/icons';
 import TriplesFormInput from '../components/TriplesFormInput';
 
-import {convertToDBpediaLink, convertObjectsToDBpediaLink, convertRelationToDBpediaLink} from '../utils';
+import TriplesTables from "../components/TriplesTables";
+
+const crypto = require('crypto');
 
 const { TextArea } = Input;
 
-function ArticleTextForm({loading, setLoading, setResult, algorithm}) {
+export const handleFactCheckResponse = (response, setLoading, setExactMatch, setPossibleMatch, setConflict, setUnknown) => {
+    setLoading(false);
+    const [exactMatch, possibleMatch, conflict, unknown] = [[],[],[],[]];
+    response.data.triples.forEach((sentence) => {
+        sentence.triples.forEach((triple) => {
+            const pushed = {key: crypto.randomBytes(16).toString('hex'), sentence: sentence.sentence,
+                            triple: triple.triple, result: triple.result};
+            if (triple.result === 'exists') {
+                exactMatch.push({...pushed});
+            } else if (triple.result === 'conflicts') {
+                conflict.push({...pushed, other_triples: triple.other_triples});
+            } else if (triple.result === 'possible') {
+                possibleMatch.push({...pushed, other_triples: triple.other_triples});
+            } else if (triple.result === 'none') {
+                unknown.push({...pushed});
+            }
+        })
+    })
+    setExactMatch(exactMatch);
+    setConflict(conflict);
+    setPossibleMatch(possibleMatch);
+    setUnknown(unknown);
+}
+
+function ArticleTextForm({loading, setLoading, algorithm, extractionScope, setExactMatch, setPossibleMatch, setConflict,
+                             setUnknown}) {
     const onSubmit = (values) => {
         setLoading(true);
         console.log('Submitted', values);
         axios.post(`/fc/${algorithm}/fact-check/`, {
-            text: values.text
+            text: values.text,
+            extraction_scope: extractionScope,
         })
         .then(function (response) {
-            console.log(response);
-            setLoading(false);
-            const result = []
-            response.data.triples.forEach((sentence) => {
-                sentence.triples.forEach((triple) => {
-                    result.push({sentence: sentence.sentence, triple: triple.triple, exists: triple.exists})
-                })
-            })
-            setResult({data: {triples: result, truthfulness: response.data.truthfulness}});
+            handleFactCheckResponse(response, setLoading, setExactMatch, setPossibleMatch, setConflict, setUnknown);
         })
     }
 
@@ -36,7 +70,7 @@ function ArticleTextForm({loading, setLoading, setResult, algorithm}) {
                 rules={[
                     {
                         required: true,
-                        message: 'Please input the fake news text!',
+                        message: 'Please input the text!',
                     }
                 ]}
             >
@@ -51,7 +85,7 @@ function ArticleTextForm({loading, setLoading, setResult, algorithm}) {
     );
 }
 
-function TriplesForm({loading, setLoading, setResult, algorithm}) {
+function TriplesForm({loading, setLoading, algorithm, setExactMatch, setPossibleMatch, setConflict, setUnknown}) {
     const onSubmit = (values) => {
         setLoading(true);
         console.log('Submitted', values);
@@ -65,7 +99,24 @@ function TriplesForm({loading, setLoading, setResult, algorithm}) {
             .then(function (response) {
                 console.log(response);
                 setLoading(false);
-                setResult(response);
+                const [exactMatch, possibleMatch, conflict, unknown] = [[],[],[],[]];
+                response.data.triples.forEach((triple) => {
+                    const pushed = {triple: triple.triple, result: triple.result};
+                    if (triple.result === 'exists') {
+                        exactMatch.push({...pushed});
+                    } else if (triple.result === 'conflicts') {
+                        conflict.push({...pushed, other_triples: triple.other_triples});
+                    } else if (triple.result === 'possible') {
+                        possibleMatch.push({...pushed, other_triples: triple.other_triples});
+                    } else if (triple.result === 'none') {
+                        unknown.push({...pushed});
+                    }
+                })
+
+                setExactMatch(exactMatch);
+                setConflict(conflict);
+                setPossibleMatch(possibleMatch);
+                setUnknown(unknown);
             });
         }
 
@@ -83,11 +134,52 @@ function TriplesForm({loading, setLoading, setResult, algorithm}) {
     );
 }
 
+function URLForm({ loading, setLoading, algorithm, extractionScope, setExactMatch, setConflict, setPossibleMatch,
+                     setUnknown }) {
+    const onSubmit = (values) => {
+        setLoading(true);
+        console.log('Submitted', values);
+        axios.post(`/fc/${algorithm}/fact-check/url/`, {
+            url: values.url,
+            extraction_scope: extractionScope,
+        })
+        .then(function (response) {
+            handleFactCheckResponse(response, setLoading, setExactMatch, setPossibleMatch, setConflict, setUnknown);
+        })
+    }
+
+    return(
+         <Form layout='vertical' onFinish={onSubmit} requiredMark={false} style={{ margin: '24px 0 0 0'}}>
+            <Form.Item
+                label='Article URL'
+                name='url'
+                rules={[
+                    {
+                        required: true,
+                        message: 'Please input the article url!',
+                    }
+                ]}
+            >
+                <Input disabled={loading}/>
+            </Form.Item>
+            <Form.Item>
+                <Button type='primary' htmlType='submit' disabled={loading} style={{ width: '100%'}}>
+                    Fact Check
+                </Button>
+            </Form.Item>
+         </Form>
+    );
+}
+
 function FactCheckerView() {
     const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState();
-    const [algorithm, setAlgorithm] =  useState('simple');
+    const [algorithm, setAlgorithm] =  useState('exact');
     const [inputType, setInputType] = useState('text');
+    const [extractionScope, setExtractionScope] = useState('noun_phrases')
+    const [exactMatch, setExactMatch] = useState([]);
+    const [possibleMatch, setPossibleMatch] = useState([]);
+    const [conflict, setConflict] = useState([]);
+    const [unknown, setUnknown] = useState([]);
 
     const onAlgorithmChange = (e) => {
         setAlgorithm(e.target.value);
@@ -97,49 +189,26 @@ function FactCheckerView() {
         setInputType(e.target.value);
     }
 
+    const onExtractionScopeChange = (e) =>{
+        setExtractionScope(e.target.value);
+    }
+
     const inputTypes = [
         { label: 'Text', value: 'text' },
         { label: 'Triples', value: 'triples' },
+        { label: 'URL', value: 'url'},
     ];
 
     const algorithms = [
-        { label: 'Simple', value: 'simple'},
-        { label: 'Better', value: 'better'},
+        { label: 'Exact Match Only', value: 'exact'},
+        { label: 'With Non Exact Match', value: 'non-exact'},
     ];
 
-    const columns = [
-        {
-            title: 'Sentence',
-            dataIndex: 'sentence',
-            key: 'sentence',
-        },
-        {
-            title: 'Subject',
-            dataIndex: ['triple', 'subject'],
-            key: 'subject',
-            render: convertToDBpediaLink,
-        },
-        {
-            title: 'Relation',
-            dataIndex: ['triple', 'relation'],
-            key: 'relation',
-            render: convertRelationToDBpediaLink,
-        },
-        {
-            title: 'Object',
-            dataIndex: ['triple', 'objects'],
-            key: 'object',
-            render: convertObjectsToDBpediaLink,
-        },
-        {
-            title: 'Exists',
-            dataIndex: 'exists',
-            key: 'exists',
-            render: (value) => value
-                ? <Tag color='green'>True</Tag>
-                : <Tag color='red'>False</Tag> ,
-        },
-    ];
+    const extractionScopes = [
+        { label: 'Noun phrases', value: 'noun_phrases'},
+        { label: 'Named entities', value: 'named_entities'},
+        { label: 'All', value: 'all'},
+    ]
 
     return(
         <Card>
@@ -162,31 +231,53 @@ function FactCheckerView() {
                     optionType='button'
                     buttonStyle='solid'
                 />
+
+                Extraction scope:
+                <Radio.Group
+                    options={extractionScopes}
+                    value={extractionScope}
+                    onChange={onExtractionScopeChange}
+                    optionType='button'
+                    buttonStyle='solid'
+                />
             </Space>
 
-            {inputType === 'text' && <ArticleTextForm loading={loading} setLoading={setLoading} setResult={setResult}
-                                                      algorithm={algorithm} />}
+            {inputType === 'text' && <ArticleTextForm loading={loading} setLoading={setLoading} algorithm={algorithm}
+                                                      extractionScope={extractionScope}
+                                                      setExactMatch={setExactMatch} setPossibleMatch={setPossibleMatch}
+                                                      setConflict={setConflict} setUnknown={setUnknown}/>}
 
-            {inputType === 'triples' && <TriplesForm loading={loading} setLoading={setLoading} setResult={setResult}
-                                                     algorithm={algorithm}/>}
+            {inputType === 'triples' && <TriplesForm loading={loading} setLoading={setLoading} algorithm={algorithm}
+                                                     setExactMatch={setExactMatch} setPossibleMatch={setPossibleMatch}
+                                                     setConflict={setConflict} setUnknown={setUnknown}/>}
+
+            {inputType === 'url' && <URLForm loading={loading} setLoading={setLoading} algorithm={algorithm}
+                                             extractionScope={extractionScope}
+                                             setExactMatch={setExactMatch} setPossibleMatch={setPossibleMatch}
+                                             setConflict={setConflict} setUnknown={setUnknown}/>}
 
             <Card>
-                {result && <Typography.Title level={4} style={{ textAlign: 'center' }}>
+                {(exactMatch.length > 0 || possibleMatch.length > 0 || conflict.length > 0 || unknown.length > 0) &&
+                <Typography.Title level={3} style={{ textAlign: 'center' }}>
                     Fact Check Result
                 </Typography.Title>}
                 <div style={{ textAlign: 'center'}}>
                     {loading && <Spin size='large'/>}
                 </div>
 
-                {result && <div>
-                    <Statistic
-                        title='Truthfulness'
-                        value={result.data.truthfulness * 100}
-                        precision={2}
-                        prefix={<CheckCircleOutlined />}
-                        suffix='%' />
-                    <Table columns={columns} dataSource={result.data.triples} scroll={{x: true}}/>
-                </div>}
+                {/*{result && <div>*/}
+                {/*    <Statistic*/}
+                {/*        title='Truthfulness'*/}
+                {/*        value={result.data.truthfulness * 100}*/}
+                {/*        precision={2}*/}
+                {/*        prefix={<CheckCircleOutlined />}*/}
+                {/*        suffix='%' />*/}
+                {/*    <Table columns={columns} dataSource={result.data.triples} scroll={{x: true}}/>*/}
+                {/*</div>}*/}
+
+                <TriplesTables algorithm={algorithm} exactMatch={exactMatch} possibleMatch={possibleMatch}
+                               conflict={conflict} unknown={unknown}/>
+
             </Card>
 
         </Card>

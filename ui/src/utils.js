@@ -1,4 +1,5 @@
 import React from "react";
+import {notification} from "antd";
 
 export const convertToDBpediaLink = (text) => {
     if (text.startsWith('http://dbpedia.org/')){
@@ -31,3 +32,31 @@ export const convertObjectsToDBpediaLink = (objects) => {
     objects.forEach(o => elements.push(convertToDBpediaLink(o)));
     return elements;
 };
+
+export const tripleColumns = [
+    {
+        title: 'Subject',
+        dataIndex: 'subject',
+        key: 'subject',
+        render: convertToDBpediaLink,
+    },
+    {
+        title: 'Relation',
+        dataIndex: 'relation',
+        key: 'relation',
+        render: convertToDBpediaLink,
+    },
+    {
+        title: 'Object',
+        dataIndex: 'objects',
+        key: 'object',
+        render: convertObjectsToDBpediaLink,
+    },
+];
+
+export const showErrorNotification = (message) => {
+    notification['error']({
+        message: 'Error!',
+        description: message,
+    });
+}

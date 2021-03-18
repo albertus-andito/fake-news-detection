@@ -70,6 +70,7 @@ class NonExactMatchFactChecker(FactChecker):
         - triples with the opposite relation (Object - Relationn - Subject)
         - triples with subject or object replaced with the corefering entity (if entity_clusters is not None)
         - triples with relation replaced with its synonyms
+        - triples with same subject and object, but different relation.
         :param original_triple: triple extracted from the text or inputted
         :type original_triple: triple.Triple
         :param entity_clusters: dictionary of entity coreference clusters
@@ -80,24 +81,31 @@ class NonExactMatchFactChecker(FactChecker):
         original_exists = self.knowledge_graph.check_triple_object_existence(original_triple, transitive=True)
         if original_exists is True:
             return 'exists', []
-        conflicts = self.knowledge_graph.get_triples(original_triple.subject, original_triple.relation)
-        if conflicts is not None:
-            return 'conflicts', conflicts
+        # conflicts = self.knowledge_graph.get_triples(original_triple.subject, original_triple.relation)
+        # if conflicts is None:
+        #     return 'conflicts', conflicts
 
         triples = [original_triple]
         if len(entity_clusters) > 0:
             triples = self.__create_triples_from_coreference(original_triple, entity_clusters)
 
         possibilities = []
+        conflicts = []
         for triple in triples:
             # check original triple
             original_exists = self.knowledge_graph.check_triple_object_existence(triple, transitive=True)
             if original_exists is True:
                 possibilities.append(triple)
                 break
-            conflicts = self.knowledge_graph.get_triples(triple.subject, triple.relation, transitive=True)
-            if conflicts is not None:
-                return 'conflicts', conflicts
+            same_entities = [self.knowledge_graph.get_relation_triples(triple.subject, obj, transitive=True)
+                             for obj in triple.objects]
+            flatten_same_entities = [triple for triple_list in same_entities if triple_list is not None
+                                     for triple in triple_list if triple is not None]
+            if len(flatten_same_entities) > 0:
+                possibilities.extend(flatten_same_entities)
+            conflict = self.knowledge_graph.get_triples(triple.subject, triple.relation, transitive=True)
+            if conflict is not None:
+                conflicts.extend(conflict)
             # check triple with opposite relation (Object - Relation - Subject)
             opposite_exists = self.knowledge_graph.check_triple_object_opposite_relation_existence(triple, transitive=True)
             opposite_triple = [Triple(obj, triple.relation, [triple.subject]) for obj in triple.objects]
@@ -108,7 +116,9 @@ class NonExactMatchFactChecker(FactChecker):
             if synonym_result is not None:
                 possibilities.extend(synonym_result)
         if len(possibilities) > 0:
-            return 'possible', possibilities
+            return 'possible', possibilities+conflicts
+        if len(conflicts) > 0:
+            return 'conflicts', conflicts
 
         return 'none', []
 

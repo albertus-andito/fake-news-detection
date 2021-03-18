@@ -58,6 +58,7 @@ function TriplesTables({exactMatch, possibleMatch, conflict, unknown,
                     return (
                         <Space>
                             <PossibleMatchModal possibleMatches={row.other_triples} algorithm={algorithm}/>
+                            <AddModal triple={row.triple} isArticle={isArticle} source={sourceUrl} sentence={row.sentence}/>
                             {isArticle &&
                             <DiscardModal
                                 triple={row.triple} source={sourceUrl} sentence={row.sentence}

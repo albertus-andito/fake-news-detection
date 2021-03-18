@@ -8,6 +8,8 @@ from SPARQLWrapper import SPARQLWrapper, JSON, POST
 from triple import Triple
 import pprint
 
+from utils import convert_to_dbpedia_resource
+
 
 class KnowledgeGraphWrapper:
     """
@@ -64,8 +66,8 @@ class KnowledgeGraphWrapper:
         :return: True if the opposite relation triple exists, False otherwise
         :rtype: bool
         """
-        exists = [self.check_triple_existence(obj, triple.relation, triple.subject, transitive) for obj in triple.objects
-                  if obj.startswith("http://dbpedia.org/resource")]
+        exists = [self.check_triple_existence(convert_to_dbpedia_resource(obj), triple.relation, triple.subject, transitive)
+                  for obj in triple.objects]
         if len(exists) == 0:
             return False
         # return any(exists) #all or any?
@@ -148,12 +150,16 @@ class KnowledgeGraphWrapper:
         return None
 
     def get_relation_triples(self, subject, obj, transitive=False):
+        if obj.startswith("http://dbpedia.org/resource"):
+            obj_query = "<" + obj + ">"
+        else:
+            obj_query = '"{}"'.format(obj)
         query = """
                 PREFIX : <http://dbpedia.org/resource/>
                 SELECT ?p WHERE{{
-                <{0}> ?p <{1}> .
+                <{0}> ?p {1} .
                 }}
-                """.format(subject, obj)
+                """.format(subject, obj_query)
         if transitive:
             query = "DEFINE input:same-as \"yes\"" + query
         self.sparql.setQuery(query)
@@ -412,34 +418,34 @@ if __name__ == '__main__':
 
     # wrapper.insert_triple("http://dbpedia.org/resource/Mr_Giuliani", "http://dbpedia.org/ontology/ignore", "http://dbpedia.org/resource/Social_norms")
 
-    triples = wrapper.get_entity("http://dbpedia.org/resource/Mr_Giuliani")
-    print(triples)
+    # triples = wrapper.get_entity("http://dbpedia.org/resource/Mr_Giuliani")
+    # print(triples)
 
-    triples = wrapper.get_entity("Mr_Giuliani")
-    print(triples)
+    # triples = wrapper.get_entity("Mr_Giuliani")
+    # print(triples)
 
     # wrapper.delete_triple("http://dbpedia.org/resource/Mr_Giuliani", "http://dbpedia.org/ontology/repeat", "unsubstantiated claims")
     # wrapper.delete_triple("http://dbpedia.org/resource/Mr_Giuliani", "http://dbpedia.org/ontology/claim",
     #                       "http://dbpedia.org/resource/Electoral_fraud")
 
-    resource = "http://dbpedia.org/resource/Mr_Giulani"
-    print(wrapper.check_resource_existence(resource))
+    # resource = "http://dbpedia.org/resource/Mr_Giulani"
+    # print(wrapper.check_resource_existence(resource))
+    #
+    # wrapper.add_sameAs_relation("http://dbpedia.org/resource/Mr_Giuliani", "http://dbpedia.org/resource/Rudy_Giuliani")
+    # print(wrapper.get_entity("http://dbpedia.org/resource/Mr_Giuliani"))
+    #
+    # res = wrapper.check_triple_existence("http://dbpedia.org/resource/Rudy_Giuliani", "http://dbpedia.org/ontology/admit",
+    #                                "Sunday", transitive=True)
+    # print(res)
 
-    wrapper.add_sameAs_relation("http://dbpedia.org/resource/Mr_Giuliani", "http://dbpedia.org/resource/Rudy_Giuliani")
-    print(wrapper.get_entity("http://dbpedia.org/resource/Mr_Giuliani"))
-
-    res = wrapper.check_triple_existence("http://dbpedia.org/resource/Rudy_Giuliani", "http://dbpedia.org/ontology/admit",
-                                   "Sunday", transitive=True)
-    print(res)
-
-    res = wrapper.check_sameAs_relation("http://dbpedia.org/resource/Rudy_Giuliani", "http://dbpedia.org/resource/Mr_Giuliani")
-    print(res)
+    # res = wrapper.check_sameAs_relation("http://dbpedia.org/resource/Rudy_Giuliani", "http://dbpedia.org/resource/Mr_Giuliani")
+    # print(res)
 
     # wrapper.remove_sameAs_relation("http://dbpedia.org/resource/Mr_Giuliani", "http://dbpedia.org/resource/Rudy_Giuliani")
     # print(wrapper.get_entity("http://dbpedia.org/resource/Mr_Giuliani"))
 
-    res = wrapper.get_same_entities("http://dbpedia.org/resource/Rudy_Giuliani")
-    print(res)
+    # res = wrapper.get_same_entities("http://dbpedia.org/resource/Rudy_Giuliani")
+    # print(res)
 
     res = wrapper.get_relation_triples("http://dbpedia.org/resource/Rudy_Giuliani", "http://dbpedia.org/resource/Social_distancing",
                                        transitive=True)

@@ -1,16 +1,18 @@
 import logging
 import logging.config
 import os
+
 from dotenv import load_dotenv
 from pathlib import Path
 from pymongo import MongoClient
 
+from articlescraper.scrapers import Scrapers
 from definitions import ROOT_DIR, LOGGER_CONFIG_PATH
 from entitycorefresolver import EntityCorefResolver
 from kgwrapper import KnowledgeGraphWrapper
 from triple import Triple
 from tripleproducer import TripleProducer
-from common.utils import scrape_text_from_url
+
 
 # TODO: Haven't considered the headlines, only the texts for now. Might want to include the headlines to be extracted.
 
@@ -43,6 +45,8 @@ class KnowledgeGraphUpdater:
         else:
             self.auto_update = auto_update
         self.coref_resolver = EntityCorefResolver()
+
+        self.scrapers = Scrapers()
 
     def update_missed_knowledge(self, kg_auto_update=None, extraction_scope=None):
         """
@@ -140,7 +144,6 @@ class KnowledgeGraphUpdater:
         if (kg_auto_update is None and self.auto_update) or kg_auto_update:
             self.logger.info('Inserting non conflicting knowledge for ' + url)
             self.insert_all_nonconflicting_knowledge(url)
-
 
     def insert_all_nonconflicting_knowledge(self, article_url):
         """
@@ -484,7 +487,8 @@ class KnowledgeGraphUpdater:
         """
         # TODO: pagination
         articles = []
-        for article in self.db_article_collection.find({}, {'_id': False, 'source': True, 'date': True, 'headlines': True}):
+        for article in self.db_article_collection.find({},
+                                                       {'_id': False, 'source': True, 'date': True, 'headlines': True}):
             articles.append({
                 'source': article['source'],
                 'headlines': '. '.join(article['headlines']),
@@ -493,7 +497,7 @@ class KnowledgeGraphUpdater:
         return articles
 
     def extract_new_article(self, url, extraction_scope='noun_phrases', kg_auto_update=False):
-        article = scrape_text_from_url(url, save_to_db=True)
+        article = self.scrapers.scrape_text_from_url(url, save_to_db=True)
         try:
             self.__extract_and_save_triples(url, article, extraction_scope, kg_auto_update)
         except Exception as e:

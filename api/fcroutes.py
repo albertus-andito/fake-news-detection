@@ -1,7 +1,6 @@
 from flask import Blueprint, request
-from urllib.parse import urlparse
 
-from articlescraper.scrapers import IndependentScraper, BbcScraper, GuardianScraper, GenericScraper
+from articlescraper.scrapers import Scrapers
 from nonexactmatchfactchecker import NonExactMatchFactChecker
 from exactmatchfactchecker import ExactMatchFactChecker
 from triple import Triple
@@ -10,29 +9,7 @@ fc_api = Blueprint('fc_api', __name__)
 
 exact_match_fc = ExactMatchFactChecker()
 non_exact_match_fc = NonExactMatchFactChecker()
-bbc_scraper = BbcScraper()
-guardian_scraper = GuardianScraper()
-independent_scraper = IndependentScraper()
-generic_scraper = GenericScraper()
-
-
-def scrape_text_from_url(url):
-    """
-    Scrapes text from the url given. It uses the generic scraper if the url is not for BBC, Guardian, or Independent.
-    :param url: url
-    :type url: str
-    :return: text scraped from the url
-    :rtype: str
-    """
-    if urlparse(url).netloc == 'www.bbc.co.uk':
-        scraped = bbc_scraper.scrape(url)
-    elif urlparse(url).netloc == 'www.theguardian.com':
-        scraped = guardian_scraper.scrape(url)
-    elif urlparse(url).netloc == 'www.independent.co.uk':
-        scraped = independent_scraper.scrape(url)
-    else:
-        scraped = generic_scraper.scrape(url)
-    return scraped['texts']
+scrapers = Scrapers()
 
 
 @fc_api.route('/')
@@ -70,7 +47,7 @@ def exact_match_fact_check_url():
     """
     url = request.get_json()['url']
     extraction_scope = request.get_json()['extraction_scope']
-    text = scrape_text_from_url(url)
+    text = scrapers.scrape_text_from_url(url, save_to_db=False)
     results = exact_match_fc.fact_check(text, extraction_scope)
     triples = [{'sentence': sentence, 'triples': [{'triple': triple.to_dict(), 'result': result,
                                                    'other_triples': [other.to_dict() for other in other_triples]}
@@ -269,7 +246,7 @@ def non_exact_match_fact_check_url():
           id: fact_checking_sentences_result
     """
     url = request.get_json()['url']
-    text = scrape_text_from_url(url)
+    text = scrapers.scrape_text_from_url(url, save_to_db=False)
     extraction_scope = request.get_json()['extraction_scope']
     results = non_exact_match_fc.fact_check(text, extraction_scope)
     triples = [{'sentence': sentence, 'triples': [{'triple': triple.to_dict(), 'result': result,

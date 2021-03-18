@@ -1,5 +1,7 @@
 import logging
 import os
+from urllib.parse import urlparse
+
 import requests
 from abc import ABC, abstractmethod
 from bs4 import BeautifulSoup
@@ -151,7 +153,7 @@ class GuardianScraper(ArticleScraper):
     """
     Guardian articles scraper.
     """
-    def __init__(self):
+    def __init__(self, api_key=os.getenv("GUARDIAN_API_KEY")):
         super().__init__()
         self.api_key = os.getenv("GUARDIAN_API_KEY")
 
@@ -169,21 +171,29 @@ class GuardianScraper(ArticleScraper):
             api_url = url
         payload = {'api-key': self.api_key, 'show-fields': 'headline,body,trailText'}
         # FIXME: try catch exception
-        response = requests.get(api_url, params=payload).json()['response']
-        if response['status'] == 'ok':
-            content = response['content']
-            headlines = [content['fields']['headline'], content['fields']['trailText']]
-            soup = BeautifulSoup(content['fields']['body'], 'html.parser')
-            text_elements = soup.find_all('p')
-            texts = '. '.join(headlines)
-            texts += '.' + ' '.join([elem.text for elem in text_elements])
-            return {
-                'headlines': [content['fields']['headline'], content['fields']['trailText']],
-                'date': datetime.fromisoformat(content['webPublicationDate'].replace("Z", "+00:00")),
-                'texts': texts,
-                'source': content['webUrl']
-            }
-        return {'source': url}
+        try:
+            response = requests.get(api_url, params=payload).json()
+            response = response['response']
+            if response['status'] == 'ok':
+                content = response['content']
+                headlines = [content['fields']['headline'], content['fields']['trailText']]
+                soup = BeautifulSoup(content['fields']['body'], 'html.parser')
+                text_elements = soup.find_all('p')
+                texts = '. '.join(headlines)
+                texts += '.' + ' '.join([elem.text for elem in text_elements])
+                return {
+                    'headlines': [content['fields']['headline'], content['fields']['trailText']],
+                    'date': datetime.fromisoformat(content['webPublicationDate'].replace("Z", "+00:00")),
+                    'texts': texts,
+                    'source': content['webUrl']
+                }
+            return {'source': url, 'message': response['status']}
+        except KeyError as e:
+            print(response)
+            return {'source': url, 'message': response}
+        except Exception as e:
+            return {'source': url, 'message': e}
+
 
 
 class GenericScraper(ArticleScraper):
@@ -214,7 +224,37 @@ class GenericScraper(ArticleScraper):
         }
 
 
+class Scrapers:
 
+    def __init__(self):
+        self.bbc_scraper = BbcScraper()
+        self.guardian_scraper = GuardianScraper()
+        self.independent_scraper = IndependentScraper()
+        self.generic_scraper = GenericScraper()
+
+    def scrape_text_from_url(self, url, save_to_db=False):
+        """
+        Scrapes text from the url given. It uses the generic scraper if the url is not for BBC, Guardian, or Independent.
+        :param url: url
+        :type url: str
+        :return: text scraped from the url
+        :rtype: str
+        """
+        if urlparse(url).netloc == 'www.bbc.co.uk':
+            scraped = self.bbc_scraper.scrape(url)
+            if save_to_db is True:
+                self.bbc_scraper.save_to_db(scraped)
+        elif urlparse(url).netloc == 'www.theguardian.com':
+            scraped = self.guardian_scraper.scrape(url)
+            if save_to_db is True:
+                self.guardian_scraper.save_to_db(scraped)
+        elif urlparse(url).netloc == 'www.independent.co.uk':
+            scraped = self.independent_scraper.scrape(url)
+            if save_to_db is True:
+                self.guardian_scraper.save_to_db(scraped)
+        else:
+            scraped = self.generic_scraper.scrape(url)
+        return scraped['texts']
 
 if __name__ == '__main__':
     # bbc = BbcScraper()

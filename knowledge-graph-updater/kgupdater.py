@@ -14,8 +14,6 @@ from triple import Triple
 from tripleproducer import TripleProducer
 
 
-# TODO: Haven't considered the headlines, only the texts for now. Might want to include the headlines to be extracted.
-
 class KnowledgeGraphUpdater:
     """
     A Knowledge Graph Updater, which updates the knowledge graph using knowledge from the scraped articles.

@@ -91,7 +91,7 @@ class TripleProducer:
             raise ValueError("The extraction_scope is unrecognised. Use 'named_entities', 'noun_phrases', or 'all'.")
 
         spacy_doc = self.nlp(document)
-        original_sentences = sent_tokenize(document)
+        original_sentences = sent_tokenize(self.__capitalise_sentence_start(document))
 
         # coreference resolution
         document = self.coref_resolution(spacy_doc)

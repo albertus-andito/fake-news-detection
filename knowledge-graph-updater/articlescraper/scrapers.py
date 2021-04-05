@@ -97,9 +97,13 @@ class BbcScraper(ArticleScraper):
         if len(text_elements) == 0 and soup.find('div', {'aria-live': 'polite'}) is not None:
             video_div = soup.find('div', {'aria-live': 'polite'})  # for video news
             text_elements = video_div.find_all('p')
-        elif len(text_elements) == 0 and soup.find('div', {'class': 'qa-story-body'}) is not None:
+        if len(text_elements) == 0 and soup.find('div', {'class': 'qa-story-body'}) is not None:
             div = soup.find('div', {'class': 'qa-story-body'})  # for sport news
             text_elements = div.find_all('p')
+        list_elements = soup.find_all('div', {'data-component': 'ordered-list-block'})
+        if list_elements is not None:
+            for el in list_elements:
+                text_elements.extend(el.find_all('li'))
 
         texts = headlines + '. ' + ' '.join([elem.text for elem in text_elements])
         return {
@@ -153,7 +157,7 @@ class GuardianScraper(ArticleScraper):
     """
     Guardian articles scraper.
     """
-    def __init__(self, api_key=os.getenv("GUARDIAN_API_KEY")):
+    def __init__(self):
         super().__init__()
         self.api_key = os.getenv("GUARDIAN_API_KEY")
 
@@ -180,19 +184,39 @@ class GuardianScraper(ArticleScraper):
                 soup = BeautifulSoup(content['fields']['body'], 'html.parser')
                 text_elements = soup.find_all('p')
                 texts = '. '.join(headlines)
-                texts += '.' + ' '.join([elem.text for elem in text_elements])
+                texts += '. ' + ' '.join([elem.text for elem in text_elements])
                 return {
                     'headlines': [content['fields']['headline'], content['fields']['trailText']],
                     'date': datetime.fromisoformat(content['webPublicationDate'].replace("Z", "+00:00")),
                     'texts': texts,
                     'source': content['webUrl']
                 }
-            return {'source': url, 'message': response['status']}
+            return self.scrape_fallback(url)
         except KeyError as e:
             print(response)
             return {'source': url, 'message': response}
         except Exception as e:
             return {'source': url, 'message': e}
+
+    def scrape_fallback(self, url):
+        page = requests.get(url)
+        soup = BeautifulSoup(page.content, 'html.parser')
+
+        headlines = [soup.find('h1').text]
+        date = datetime.strptime(soup.find('label', attrs={'for': 'dateToggle'}).text, '%a %d %b %Y %H.%M %Z')
+
+        texts = '. '.join(headlines)
+        text_elements = soup.find_all('p')
+        texts += '. ' + ' '.join([elem.text+'.' if i == 0 else elem.text for i, elem in enumerate(text_elements)
+                                  if not elem.text.startswith('First published')
+                                  and not elem.text.startswith('Last modified')])
+        return {
+            'headlines': headlines,
+            'date': date,
+            'texts': texts,
+            'source': url
+        }
+
 
 
 
@@ -262,9 +286,15 @@ if __name__ == '__main__':
     # guardian = GuardianScraper()
     #
     # bbc.execute("https://www.bbc.co.uk/news/world-us-canada-55210243")
-    independent.execute("https://www.independent.co.uk/news/science/archaeology/oxford-archaeology-dig-skeleton-hertfordshire-b1767027.html")
+    # independent.execute("https://www.independent.co.uk/news/science/archaeology/oxford-archaeology-dig-skeleton-hertfordshire-b1767027.html")
     # guardian.execute("https://www.theguardian.com/business/2020/dec/15/barclays-fined-fca-covid-crisis")
 
     # generic = GenericScraper()
     # res = generic.scrape('https://news.sky.com/story/recommended-1-pay-rise-for-nhs-staff-labelled-pitiful-by-nursing-union-12235986')
     # print(res)
+
+    # res = guardian.scrape_fallback("https://www.theguardian.com/sport/2021/mar/18/tokyo-olympics-ceremonies-chief-hiroshi-sasaki-sexism")
+    # print(res)
+
+    res = independent.scrape('https://www.independent.co.uk/news/world/americas/antivaxxers-marvin-hagler-death-vaccine-b1817067.html')
+    print(res)

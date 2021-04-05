@@ -140,7 +140,7 @@ class NonExactMatchFactChecker(FactChecker):
         if corefs_subject is not None and len(corefs_objects) > 0:
             for coref_s in corefs_subject:
                 for obj in corefs_objects:
-                    triples.extend([Triple(coref_s, triple.relation, coref_o) for coref_o in obj])
+                    triples.extend([Triple(coref_s, triple.relation, [coref_o]) for coref_o in obj])
 
         return triples
 

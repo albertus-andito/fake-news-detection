@@ -1,0 +1,166 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>factchecker package &#8212; Fake News Detection  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="knowledgegraphupdater.articlescraper package" href="knowledgegraphupdater.articlescraper.html" />
+    <link rel="prev" title="common package" href="common.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="knowledgegraphupdater.articlescraper.html" title="knowledgegraphupdater.articlescraper package"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="common.html" title="common package"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Fake News Detection  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" accesskey="U">fake-news-detection</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">factchecker package</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="factchecker-package">
+<h1>factchecker package<a class="headerlink" href="#factchecker-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="factchecker-exactmatchfactchecker-module">
+<h2>factchecker.exactmatchfactchecker module<a class="headerlink" href="#factchecker-exactmatchfactchecker-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="factchecker-factchecker-module">
+<h2>factchecker.factchecker module<a class="headerlink" href="#factchecker-factchecker-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="factchecker-nonexactmatchfactchecker-module">
+<h2>factchecker.nonexactmatchfactchecker module<a class="headerlink" href="#factchecker-nonexactmatchfactchecker-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-factchecker">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-factchecker" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="factchecker.FactChecker">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">factchecker.</span></code><code class="sig-name descname"><span class="pre">FactChecker</span></code><a class="headerlink" href="#factchecker.FactChecker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<p>Abstract class of a Fact Checker.</p>
+<dl class="py method">
+<dt id="factchecker.FactChecker.fact_check">
+<em class="property"><span class="pre">abstract</span> </em><code class="sig-name descname"><span class="pre">fact_check</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">article</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extraction_scope</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#factchecker.FactChecker.fact_check" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract method of fact-checking.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>article</strong> (<em>str</em>) – article text</p></li>
+<li><p><strong>extraction_scope</strong> (<em>str</em>) – The scope of the extraction, deciding whether it should include only relations between
+‘named_entities’, ‘noun_phrases’, or ‘all’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a list of fact check result (sentence, triples, and their results)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">factchecker package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#factchecker-exactmatchfactchecker-module">factchecker.exactmatchfactchecker module</a></li>
+<li><a class="reference internal" href="#factchecker-factchecker-module">factchecker.factchecker module</a></li>
+<li><a class="reference internal" href="#factchecker-nonexactmatchfactchecker-module">factchecker.nonexactmatchfactchecker module</a></li>
+<li><a class="reference internal" href="#module-factchecker">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="common.html"
+                        title="previous chapter">common package</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="knowledgegraphupdater.articlescraper.html"
+                        title="next chapter">knowledgegraphupdater.articlescraper package</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/factchecker.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="knowledgegraphupdater.articlescraper.html" title="knowledgegraphupdater.articlescraper package"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="common.html" title="common package"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Fake News Detection  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" >fake-news-detection</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">factchecker package</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Albertus Andito.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.4.
+    </div>
+  </body>
+</html>

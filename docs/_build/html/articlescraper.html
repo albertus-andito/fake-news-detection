@@ -1,0 +1,376 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>articlescraper package &#8212; Fake News Detection  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="common package" href="common.html" />
+    <link rel="prev" title="fake-news-detection" href="modules.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="common.html" title="common package"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="modules.html" title="fake-news-detection"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Fake News Detection  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" accesskey="U">fake-news-detection</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">articlescraper package</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="articlescraper-package">
+<h1>articlescraper package<a class="headerlink" href="#articlescraper-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-articlescraper.main">
+<span id="articlescraper-main-module"></span><h2>articlescraper.main module<a class="headerlink" href="#module-articlescraper.main" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="articlescraper.main.main">
+<code class="sig-prename descclassname"><span class="pre">articlescraper.main.</span></code><code class="sig-name descname"><span class="pre">main</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#articlescraper.main.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Driver class for Article Scraper. If run, this will periodically poll the RSS endpoints and scrape articles.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-articlescraper.poller">
+<span id="articlescraper-poller-module"></span><h2>articlescraper.poller module<a class="headerlink" href="#module-articlescraper.poller" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="articlescraper.poller.NewsPoller">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">articlescraper.poller.</span></code><code class="sig-name descname"><span class="pre">NewsPoller</span></code><a class="headerlink" href="#articlescraper.poller.NewsPoller" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>NewsPoller polls the RSS endpoints periodically (currently every minute) and uses scrapers to scrape articles.</p>
+<dl class="py attribute">
+<dt id="articlescraper.poller.NewsPoller.BBC_RSS_URL">
+<code class="sig-name descname"><span class="pre">BBC_RSS_URL</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'http://feeds.bbci.co.uk/news/rss.xml'</span></em><a class="headerlink" href="#articlescraper.poller.NewsPoller.BBC_RSS_URL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="articlescraper.poller.NewsPoller.GUARDIAN_RSS_URL">
+<code class="sig-name descname"><span class="pre">GUARDIAN_RSS_URL</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'https://www.theguardian.com/uk/rss'</span></em><a class="headerlink" href="#articlescraper.poller.NewsPoller.GUARDIAN_RSS_URL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="articlescraper.poller.NewsPoller.INDEPENDENT_RSS_URL">
+<code class="sig-name descname"><span class="pre">INDEPENDENT_RSS_URL</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'https://www.independent.co.uk/news/rss'</span></em><a class="headerlink" href="#articlescraper.poller.NewsPoller.INDEPENDENT_RSS_URL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="articlescraper.poller.NewsPoller.logger">
+<code class="sig-name descname"><span class="pre">logger</span></code><em class="property"> <span class="pre">=</span> <span class="pre">&lt;RootLogger</span> <span class="pre">root</span> <span class="pre">(WARNING)&gt;</span></em><a class="headerlink" href="#articlescraper.poller.NewsPoller.logger" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="articlescraper.poller.NewsPoller.poll_news_feed">
+<code class="sig-name descname"><span class="pre">poll_news_feed</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rss_url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scraper</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#articlescraper.poller.NewsPoller.poll_news_feed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Polls the news feed RSS and uses the scraper to scrape articles.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rss_url</strong> (<em>str</em>) – News feed RSS URL</p></li>
+<li><p><strong>scraper</strong> (<em>articlescraper.ArticleScraper</em>) – Scraper for the corresponding news website</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="articlescraper.poller.NewsPoller.start">
+<code class="sig-name descname"><span class="pre">start</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#articlescraper.poller.NewsPoller.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Starts the periodical polling process. Currently set to every minute.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-articlescraper.scrapers">
+<span id="articlescraper-scrapers-module"></span><h2>articlescraper.scrapers module<a class="headerlink" href="#module-articlescraper.scrapers" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="articlescraper.scrapers.ArticleScraper">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">articlescraper.scrapers.</span></code><code class="sig-name descname"><span class="pre">ArticleScraper</span></code><a class="headerlink" href="#articlescraper.scrapers.ArticleScraper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<p>Base class for article scrapers. It scrapes articles and saves them to DB.</p>
+<dl class="py method">
+<dt id="articlescraper.scrapers.ArticleScraper.execute">
+<code class="sig-name descname"><span class="pre">execute</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#articlescraper.scrapers.ArticleScraper.execute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scrapes article and saves them to DB if there is an article.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>url</strong> (<em>str</em>) – Article url</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="articlescraper.scrapers.ArticleScraper.logger">
+<code class="sig-name descname"><span class="pre">logger</span></code><em class="property"> <span class="pre">=</span> <span class="pre">&lt;RootLogger</span> <span class="pre">root</span> <span class="pre">(WARNING)&gt;</span></em><a class="headerlink" href="#articlescraper.scrapers.ArticleScraper.logger" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="articlescraper.scrapers.ArticleScraper.save_to_db">
+<code class="sig-name descname"><span class="pre">save_to_db</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">article</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#articlescraper.scrapers.ArticleScraper.save_to_db" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves article to DB.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>article</strong> (<em>dict</em>) – News article text</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="articlescraper.scrapers.ArticleScraper.scrape">
+<em class="property"><span class="pre">abstract</span> </em><code class="sig-name descname"><span class="pre">scrape</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#articlescraper.scrapers.ArticleScraper.scrape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scrapes article.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>url</strong> (<em>str</em>) – Article url</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Dictionary of article in the format of {‘headlines’:…, ‘date’:…, ‘text’:…, ‘source’:…}</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="articlescraper.scrapers.BbcScraper">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">articlescraper.scrapers.</span></code><code class="sig-name descname"><span class="pre">BbcScraper</span></code><a class="headerlink" href="#articlescraper.scrapers.BbcScraper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#articlescraper.scrapers.ArticleScraper" title="articlescraper.scrapers.ArticleScraper"><code class="xref py py-class docutils literal notranslate"><span class="pre">articlescraper.scrapers.ArticleScraper</span></code></a></p>
+<p>BBC articles scraper.</p>
+<dl class="py method">
+<dt id="articlescraper.scrapers.BbcScraper.scrape">
+<code class="sig-name descname"><span class="pre">scrape</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#articlescraper.scrapers.BbcScraper.scrape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scrapes BBC article.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>url</strong> (<em>str</em>) – Article url</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Dictionary of article in the format of {‘headlines’:…, ‘date’:…, ‘text’:…, ‘source’:…}</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="articlescraper.scrapers.GenericScraper">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">articlescraper.scrapers.</span></code><code class="sig-name descname"><span class="pre">GenericScraper</span></code><a class="headerlink" href="#articlescraper.scrapers.GenericScraper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#articlescraper.scrapers.ArticleScraper" title="articlescraper.scrapers.ArticleScraper"><code class="xref py py-class docutils literal notranslate"><span class="pre">articlescraper.scrapers.ArticleScraper</span></code></a></p>
+<p>Scraper for a generic website.</p>
+<dl class="py method">
+<dt id="articlescraper.scrapers.GenericScraper.scrape">
+<code class="sig-name descname"><span class="pre">scrape</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#articlescraper.scrapers.GenericScraper.scrape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scrapes text from &lt;p&gt; tags of the webpage.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>url</strong> (<em>str</em>) – url</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Dictionary of article in the format of {‘headlines’:…, ‘date’:…, ‘text’:…, ‘source’:…}</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="articlescraper.scrapers.GuardianScraper">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">articlescraper.scrapers.</span></code><code class="sig-name descname"><span class="pre">GuardianScraper</span></code><a class="headerlink" href="#articlescraper.scrapers.GuardianScraper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#articlescraper.scrapers.ArticleScraper" title="articlescraper.scrapers.ArticleScraper"><code class="xref py py-class docutils literal notranslate"><span class="pre">articlescraper.scrapers.ArticleScraper</span></code></a></p>
+<p>Guardian articles scraper.
+It requires the GUARDIAN_API_KEY to be set in the .env</p>
+<dl class="py method">
+<dt id="articlescraper.scrapers.GuardianScraper.scrape">
+<code class="sig-name descname"><span class="pre">scrape</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#articlescraper.scrapers.GuardianScraper.scrape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scrapes Guardian article using Guardian Open Platform API (<a class="reference external" href="https://open-platform.theguardian.com/">https://open-platform.theguardian.com/</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>url</strong> (<em>str</em>) – Article url</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Dictionary of article in the format of {‘headlines’:…, ‘date’:…, ‘text’:…, ‘source’:…}</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="articlescraper.scrapers.GuardianScraper.scrape_fallback">
+<code class="sig-name descname"><span class="pre">scrape_fallback</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#articlescraper.scrapers.GuardianScraper.scrape_fallback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fallback scraping method if the Guardian API is having issues.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>url</strong> (<em>str</em>) – Article url</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Dictionary of article in the format of {‘headlines’:…, ‘date’:…, ‘text’:…, ‘source’:…}</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="articlescraper.scrapers.IndependentScraper">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">articlescraper.scrapers.</span></code><code class="sig-name descname"><span class="pre">IndependentScraper</span></code><a class="headerlink" href="#articlescraper.scrapers.IndependentScraper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#articlescraper.scrapers.ArticleScraper" title="articlescraper.scrapers.ArticleScraper"><code class="xref py py-class docutils literal notranslate"><span class="pre">articlescraper.scrapers.ArticleScraper</span></code></a></p>
+<p>Independent articles scraper.</p>
+<dl class="py method">
+<dt id="articlescraper.scrapers.IndependentScraper.scrape">
+<code class="sig-name descname"><span class="pre">scrape</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#articlescraper.scrapers.IndependentScraper.scrape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scrapes Independent article.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>url</strong> (<em>str</em>) – Article url</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Dictionary of article in the format of {‘headlines’:…, ‘date’:…, ‘text’:…, ‘source’:…}</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="articlescraper.scrapers.Scrapers">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">articlescraper.scrapers.</span></code><code class="sig-name descname"><span class="pre">Scrapers</span></code><a class="headerlink" href="#articlescraper.scrapers.Scrapers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Collection of scrapers.</p>
+<dl class="py method">
+<dt id="articlescraper.scrapers.Scrapers.scrape_text_from_url">
+<code class="sig-name descname"><span class="pre">scrape_text_from_url</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_to_db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#articlescraper.scrapers.Scrapers.scrape_text_from_url" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scrapes text from the url given. It uses the generic scraper if the url is not for BBC, Guardian, or Independent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>url</strong> (<em>str</em>) – url</p></li>
+<li><p><strong>save_to_db</strong> (<em>bool</em>) – whether to save the scraped text to the database or not. This is only applicable for BBC,
+Independent, and Guardian URLs.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>text scraped from the url</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">articlescraper package</a><ul>
+<li><a class="reference internal" href="#module-articlescraper.main">articlescraper.main module</a></li>
+<li><a class="reference internal" href="#module-articlescraper.poller">articlescraper.poller module</a></li>
+<li><a class="reference internal" href="#module-articlescraper.scrapers">articlescraper.scrapers module</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="modules.html"
+                        title="previous chapter">fake-news-detection</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="common.html"
+                        title="next chapter">common package</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/articlescraper.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="common.html" title="common package"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="modules.html" title="fake-news-detection"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Fake News Detection  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" >fake-news-detection</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">articlescraper package</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Albertus Andito.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.4.
+    </div>
+  </body>
+</html>

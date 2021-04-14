@@ -1,0 +1,328 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>factcheckers package &#8212; Fake News Detection  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="knowledgegraphupdater.articlescraper package" href="knowledgegraphupdater.articlescraper.html" />
+    <link rel="prev" title="common package" href="common.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="knowledgegraphupdater.articlescraper.html" title="knowledgegraphupdater.articlescraper package"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="common.html" title="common package"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Fake News Detection  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" accesskey="U">fake-news-detection</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">factcheckers package</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="factcheckers-package">
+<h1>factcheckers package<a class="headerlink" href="#factcheckers-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-factcheckers.exactmatchfactchecker">
+<span id="factcheckers-exactmatchfactchecker-module"></span><h2>factcheckers.exactmatchfactchecker module<a class="headerlink" href="#module-factcheckers.exactmatchfactchecker" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="factcheckers.exactmatchfactchecker.ExactMatchFactChecker">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">factcheckers.exactmatchfactchecker.</span></code><code class="sig-name descname"><span class="pre">ExactMatchFactChecker</span></code><a class="headerlink" href="#factcheckers.exactmatchfactchecker.ExactMatchFactChecker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#factcheckers.factchecker.FactChecker" title="factcheckers.factchecker.FactChecker"><code class="xref py py-class docutils literal notranslate"><span class="pre">factcheckers.factchecker.FactChecker</span></code></a></p>
+<p>An Exact Match Fact Checker, where a truthfulness is decided only by finding the exact match of the triples.</p>
+<dl class="py method">
+<dt id="factcheckers.exactmatchfactchecker.ExactMatchFactChecker.exact_fact_check">
+<code class="sig-name descname"><span class="pre">exact_fact_check</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">triple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transitive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#factcheckers.exactmatchfactchecker.ExactMatchFactChecker.exact_fact_check" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks for the triple existence and conflicts</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>triple</strong> (<a class="reference internal" href="common.html#common.triple.Triple" title="common.triple.Triple"><em>triple.Triple</em></a>) – triple to be checked</p></li>
+<li><p><strong>transitive</strong> (<em>bool</em>) – whether a check should also be done for entities that are in the sameAs relation with the subject</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a tuple of its result and list of supporting triples</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="factcheckers.exactmatchfactchecker.ExactMatchFactChecker.fact_check">
+<code class="sig-name descname"><span class="pre">fact_check</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">article</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extraction_scope</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#factcheckers.exactmatchfactchecker.ExactMatchFactChecker.fact_check" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fact check the given text, by first extracting the triples and then finding the exact match of the triples in the
+knowledge graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>article</strong> (<em>str</em>) – article text</p></li>
+<li><p><strong>extraction_scope</strong> (<em>str</em>) – The scope of the extraction, deciding whether it should include only relations between
+‘named_entities’, ‘noun_phrases’, or ‘all’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a list of fact check result (sentence, {triples: their results})</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="factcheckers.exactmatchfactchecker.ExactMatchFactChecker.fact_check_triples">
+<code class="sig-name descname"><span class="pre">fact_check_triples</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">triples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transitive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#factcheckers.exactmatchfactchecker.ExactMatchFactChecker.fact_check_triples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fact check the given triples, by finding the exact match of the triples in the knowledge graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>triples</strong> (<em>list</em>) – list of triples of type triple.Triple</p></li>
+<li><p><strong>transitive</strong> (<em>bool</em>) – whether a check should also be done for entities that are in the sameAs relation with the subject</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a list of fact check result (sentence, {triples: their results})</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-factcheckers.factchecker">
+<span id="factcheckers-factchecker-module"></span><h2>factcheckers.factchecker module<a class="headerlink" href="#module-factcheckers.factchecker" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="factcheckers.factchecker.FactChecker">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">factcheckers.factchecker.</span></code><code class="sig-name descname"><span class="pre">FactChecker</span></code><a class="headerlink" href="#factcheckers.factchecker.FactChecker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<p>Abstract class of a Fact Checker.</p>
+<dl class="py method">
+<dt id="factcheckers.factchecker.FactChecker.fact_check">
+<em class="property"><span class="pre">abstract</span> </em><code class="sig-name descname"><span class="pre">fact_check</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">article</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extraction_scope</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#factcheckers.factchecker.FactChecker.fact_check" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract method of fact-checking.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>article</strong> (<em>str</em>) – article text</p></li>
+<li><p><strong>extraction_scope</strong> (<em>str</em>) – The scope of the extraction, deciding whether it should include only relations between
+‘named_entities’, ‘noun_phrases’, or ‘all’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a list of fact check result (sentence, {triples: their results})</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-factcheckers.nonexactmatchfactchecker">
+<span id="factcheckers-nonexactmatchfactchecker-module"></span><h2>factcheckers.nonexactmatchfactchecker module<a class="headerlink" href="#module-factcheckers.nonexactmatchfactchecker" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="factcheckers.nonexactmatchfactchecker.NonExactMatchFactChecker">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">factcheckers.nonexactmatchfactchecker.</span></code><code class="sig-name descname"><span class="pre">NonExactMatchFactChecker</span></code><a class="headerlink" href="#factcheckers.nonexactmatchfactchecker.NonExactMatchFactChecker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#factcheckers.factchecker.FactChecker" title="factcheckers.factchecker.FactChecker"><code class="xref py py-class docutils literal notranslate"><span class="pre">factcheckers.factchecker.FactChecker</span></code></a></p>
+<p>A Non Exact Match Fact Checker.
+It considers the opposite relation (Object-Relation-Triple) of every triple.
+It also considers the synonyms of the relation, at the moment using WordNet.</p>
+<dl class="py method">
+<dt id="factcheckers.nonexactmatchfactchecker.NonExactMatchFactChecker.check_relation_synonyms">
+<code class="sig-name descname"><span class="pre">check_relation_synonyms</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">triple</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#factcheckers.nonexactmatchfactchecker.NonExactMatchFactChecker.check_relation_synonyms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check the existence of triples, in which the relation is a synonym of the relation of the inputted triple.
+Once a triple is found, it is returned without checking the other synonyms.
+Note that it also checks the opposite relation (Object - Relation - Subject).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>triple</strong> (<a class="reference internal" href="common.html#common.triple.Triple" title="common.triple.Triple"><em>triple.Triple</em></a>) – triple of type triple.Triple</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the triple, if found in the knowledge graph. None, otherwise.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="factcheckers.nonexactmatchfactchecker.NonExactMatchFactChecker.fact_check">
+<code class="sig-name descname"><span class="pre">fact_check</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">article</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extraction_scope</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#factcheckers.nonexactmatchfactchecker.NonExactMatchFactChecker.fact_check" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fact check the given text, by first extracting the triples and then infer the existence of the triples in the
+knowledge graph.
+The inference is done by finding the exact match, finding the triples of the opposite relation (Object - Relation
+- Subject), finding the triples where subject or object are corefering entities, and finding the triples with
+similar (based on synonymy) relations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>article</strong> (<em>str</em>) – article text</p></li>
+<li><p><strong>extraction_scope</strong> (<em>str</em>) – The scope of the extraction, deciding whether it should include only relations between
+‘named_entities’, ‘noun_phrases’, or ‘all’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a list of fact check result (sentence, {triples: their results})</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="factcheckers.nonexactmatchfactchecker.NonExactMatchFactChecker.fact_check_triples">
+<code class="sig-name descname"><span class="pre">fact_check_triples</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">triples</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#factcheckers.nonexactmatchfactchecker.NonExactMatchFactChecker.fact_check_triples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fact check the given triples, by by first extracting the triples and then infer the existence of the triples in the
+knowledge graph.
+The inference is done by finding the exact match, finding the triples of the opposite relation (Object - Relation
+- Subject), and finding the triples with
+similar (based on synonymy) relations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>triples</strong> (<em>list</em>) – list of triples of type triple.Triple</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a list of fact check result (sentence, {triples: their results})</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="factcheckers.nonexactmatchfactchecker.NonExactMatchFactChecker.non_exact_fact_check">
+<code class="sig-name descname"><span class="pre">non_exact_fact_check</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">original_triple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entity_clusters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#factcheckers.nonexactmatchfactchecker.NonExactMatchFactChecker.non_exact_fact_check" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check whether the triple or the “related triples” exist in the knowledge graph or not.
+Related triples are:</p>
+<ul class="simple">
+<li><p>triples with the opposite relation (Object - Relation - Subject)</p></li>
+<li><p>triples with subject or object replaced with the corefering entity (if entity_clusters is not None)</p></li>
+<li><p>triples with relation replaced with its synonyms</p></li>
+<li><p>triples with same subject and object, but different relation.</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>original_triple</strong> (<a class="reference internal" href="common.html#common.triple.Triple" title="common.triple.Triple"><em>triple.Triple</em></a>) – triple extracted from the text or inputted</p></li>
+<li><p><strong>entity_clusters</strong> (<em>dict</em>) – dictionary of entity coreference clusters</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a tuple of the triple and its existence, if found in the knowledge graph. None, otherwise.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">factcheckers package</a><ul>
+<li><a class="reference internal" href="#module-factcheckers.exactmatchfactchecker">factcheckers.exactmatchfactchecker module</a></li>
+<li><a class="reference internal" href="#module-factcheckers.factchecker">factcheckers.factchecker module</a></li>
+<li><a class="reference internal" href="#module-factcheckers.nonexactmatchfactchecker">factcheckers.nonexactmatchfactchecker module</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="common.html"
+                        title="previous chapter">common package</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="knowledgegraphupdater.articlescraper.html"
+                        title="next chapter">knowledgegraphupdater.articlescraper package</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/factcheckers.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="knowledgegraphupdater.articlescraper.html" title="knowledgegraphupdater.articlescraper package"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="common.html" title="common package"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Fake News Detection  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" >fake-news-detection</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">factcheckers package</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Albertus Andito.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.4.
+    </div>
+  </body>
+</html>

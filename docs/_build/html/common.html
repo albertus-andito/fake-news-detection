@@ -1,0 +1,928 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>common package &#8212; Fake News Detection  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="factcheckers package" href="factcheckers.html" />
+    <link rel="prev" title="fake-news-detection" href="modules.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="factcheckers.html" title="factcheckers package"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="modules.html" title="fake-news-detection"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Fake News Detection  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" accesskey="U">fake-news-detection</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">common package</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="common-package">
+<h1>common package<a class="headerlink" href="#common-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-common.entitycorefresolver">
+<span id="common-entitycorefresolver-module"></span><h2>common.entitycorefresolver module<a class="headerlink" href="#module-common.entitycorefresolver" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="common.entitycorefresolver.EntityCorefResolver">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">common.entitycorefresolver.</span></code><code class="sig-name descname"><span class="pre">EntityCorefResolver</span></code><a class="headerlink" href="#common.entitycorefresolver.EntityCorefResolver" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Entity Coreference Resolver (using Spacy and Neuralcoref)</p>
+<dl class="py attribute">
+<dt id="common.entitycorefresolver.EntityCorefResolver.BLACKLIST">
+<code class="sig-name descname"><span class="pre">BLACKLIST</span></code><em class="property"> <span class="pre">=</span> <span class="pre">['i',</span> <span class="pre">'me',</span> <span class="pre">'my',</span> <span class="pre">'mine',</span> <span class="pre">'you',</span> <span class="pre">'your',</span> <span class="pre">'yours',</span> <span class="pre">'he',</span> <span class="pre">'him',</span> <span class="pre">'his',</span> <span class="pre">'she',</span> <span class="pre">'her',</span> <span class="pre">'hers',</span> <span class="pre">'we',</span> <span class="pre">'us',</span> <span class="pre">'our',</span> <span class="pre">'ours',</span> <span class="pre">'they',</span> <span class="pre">'them',</span> <span class="pre">'their',</span> <span class="pre">'theirs',</span> <span class="pre">'it',</span> <span class="pre">'its']</span></em><a class="headerlink" href="#common.entitycorefresolver.EntityCorefResolver.BLACKLIST" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="common.entitycorefresolver.EntityCorefResolver.get_coref_clusters">
+<code class="sig-name descname"><span class="pre">get_coref_clusters</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.entitycorefresolver.EntityCorefResolver.get_coref_clusters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets coreference clusters in DBpedia format.
+It returns a dictionary, where each key is the most representative mention for the cluster,
+and each value is a set of the other mentions for the cluster
+Standard pronouns (listed in BLACKLIST) are excluded.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>doc</strong> (<em>str</em>) – a text</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>dictionary of coreference clusters, as described above</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-common.kgwrapper">
+<span id="common-kgwrapper-module"></span><h2>common.kgwrapper module<a class="headerlink" href="#module-common.kgwrapper" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="common.kgwrapper.KnowledgeGraphWrapper">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">common.kgwrapper.</span></code><code class="sig-name descname"><span class="pre">KnowledgeGraphWrapper</span></code><a class="headerlink" href="#common.kgwrapper.KnowledgeGraphWrapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A wrapper for RDF Triple Store (Knowledge Graph) operations.</p>
+<dl class="py method">
+<dt id="common.kgwrapper.KnowledgeGraphWrapper.add_sameAs_relation">
+<code class="sig-name descname"><span class="pre">add_sameAs_relation</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entity_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entity_b</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.kgwrapper.KnowledgeGraphWrapper.add_sameAs_relation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a sameAs relation between two entities.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>entity_a</strong> (<em>str</em>) – a DBpedia resource/entity (must be prepended by “<a class="reference external" href="http://dbpedia.org/resource/">http://dbpedia.org/resource/</a>”)</p></li>
+<li><p><strong>entity_b</strong> (<em>str</em>) – a DBpedia resource/entity (must be prepended by “<a class="reference external" href="http://dbpedia.org/resource/">http://dbpedia.org/resource/</a>”)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.kgwrapper.KnowledgeGraphWrapper.check_resource_existence">
+<code class="sig-name descname"><span class="pre">check_resource_existence</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resource</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.kgwrapper.KnowledgeGraphWrapper.check_resource_existence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if a resource exists in the Knowledge Graph, either as a Subject or Object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>resource</strong> (<em>str</em>) – resource name in DBpedia format (must be prepended by “<a class="reference external" href="http://dbpedia.org/resource/">http://dbpedia.org/resource/</a>”)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True if resource exists, False otherwise</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.kgwrapper.KnowledgeGraphWrapper.check_sameAs_relation">
+<code class="sig-name descname"><span class="pre">check_sameAs_relation</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entity_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entity_b</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.kgwrapper.KnowledgeGraphWrapper.check_sameAs_relation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check the sameAs relation existence between two entities.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>entity_a</strong> (<em>str</em>) – a DBpedia resource/entity (must be prepended by “<a class="reference external" href="http://dbpedia.org/resource/">http://dbpedia.org/resource/</a>”)</p></li>
+<li><p><strong>entity_b</strong> (<em>str</em>) – a DBpedia resource/entity (must be prepended by “<a class="reference external" href="http://dbpedia.org/resource/">http://dbpedia.org/resource/</a>”)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.kgwrapper.KnowledgeGraphWrapper.check_triple_existence">
+<code class="sig-name descname"><span class="pre">check_triple_existence</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subject</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transitive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.kgwrapper.KnowledgeGraphWrapper.check_triple_existence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if a triple exists or not in the Knowledge Graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>subject</strong> (<em>str</em>) – triple’s Subject (must be prepended by “<a class="reference external" href="http://dbpedia.org/resource/">http://dbpedia.org/resource/</a>”)</p></li>
+<li><p><strong>relation</strong> (<em>str</em>) – triple’s Relation/predicate/property (must be prepended by “<a class="reference external" href="http://dbpedia.org/ontology/">http://dbpedia.org/ontology/</a>”)</p></li>
+<li><p><strong>obj</strong> (<em>str</em>) – triple’s Object</p></li>
+<li><p><strong>transitive</strong> (<em>bool</em>) – whether a check should also be done for entities that are in the sameAs relation with the subject</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True if triple exists, False otherwise</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.kgwrapper.KnowledgeGraphWrapper.check_triple_object_existence">
+<code class="sig-name descname"><span class="pre">check_triple_object_existence</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">triple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transitive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.kgwrapper.KnowledgeGraphWrapper.check_triple_object_existence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if a triple exists or not in the Knowledge Graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>triple</strong> (<a class="reference internal" href="#common.triple.Triple" title="common.triple.Triple"><em>triple.Triple</em></a>) – a triple of type triple.Triple</p></li>
+<li><p><strong>transitive</strong> (<em>bool</em>) – whether a check should also be done for entities that are in the sameAs Relation with the Subject</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True if triple exists, False otherwise</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.kgwrapper.KnowledgeGraphWrapper.check_triple_object_opposite_relation_existence">
+<code class="sig-name descname"><span class="pre">check_triple_object_opposite_relation_existence</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">triple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transitive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.kgwrapper.KnowledgeGraphWrapper.check_triple_object_opposite_relation_existence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if a triple with the opposite relation (Objects-Relation-Subject) exists or not in the Knowledge Graph.
+To be able to do this, the original Object (which becomes the Subject in this case) needs to be a DBpedia resource/
+entity. If it is a literal String, then the check is not performed (because Subject always needs to be a resource).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>triple</strong> (<a class="reference internal" href="#common.triple.Triple" title="common.triple.Triple"><em>triple.Triple</em></a>) – a triple of type triple.Triple</p></li>
+<li><p><strong>transitive</strong> (<em>bool</em>) – whether a check should also be done for entities that are in the sameAs relation with the subject</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True if the opposite relation triple exists, False otherwise</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.kgwrapper.KnowledgeGraphWrapper.delete_triple">
+<code class="sig-name descname"><span class="pre">delete_triple</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subject</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obj</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.kgwrapper.KnowledgeGraphWrapper.delete_triple" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deletes triple from the knowledge graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>subject</strong> (<em>str</em>) – triple’s Subject (must be prepended by “<a class="reference external" href="http://dbpedia.org/resource/">http://dbpedia.org/resource/</a>”)</p></li>
+<li><p><strong>relation</strong> (<em>str</em>) – triple’s Relation/predicate/property (must be prepended by “<a class="reference external" href="http://dbpedia.org/ontology/">http://dbpedia.org/ontology/</a>”)</p></li>
+<li><p><strong>obj</strong> (<em>str</em>) – triple’s Object</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.kgwrapper.KnowledgeGraphWrapper.delete_triple_object">
+<code class="sig-name descname"><span class="pre">delete_triple_object</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">triple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transitive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.kgwrapper.KnowledgeGraphWrapper.delete_triple_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deletes triple from the knowledge graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>triple</strong> (<a class="reference internal" href="#common.triple.Triple" title="common.triple.Triple"><em>triple.Triple</em></a>) – a triple of type triple.Triple</p></li>
+<li><p><strong>transitive</strong> (<em>bool</em>) – whether the delete should also be done for entities that are in the sameAs relation with the Subject</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.kgwrapper.KnowledgeGraphWrapper.get_entity">
+<code class="sig-name descname"><span class="pre">get_entity</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subject</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transitive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.kgwrapper.KnowledgeGraphWrapper.get_entity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all triples that the Subject or entity has in the Knowledge Graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>subject</strong> (<em>str</em>) – triple’s Subject</p></li>
+<li><p><strong>transitive</strong> (<em>bool</em>) – whether a check should also be done for entities that are in the sameAs relation with the Subject</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of all triples that the Subject has in the knowledge graph, or None if the Subject doesn’t exist</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.kgwrapper.KnowledgeGraphWrapper.get_relation_triples">
+<code class="sig-name descname"><span class="pre">get_relation_triples</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subject</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transitive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.kgwrapper.KnowledgeGraphWrapper.get_relation_triples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get triples from Knowledge Graph that have the given Subject and Relation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>subject</strong> (<em>str</em>) – triple’s Subject (must be prepended by “<a class="reference external" href="http://dbpedia.org/resource/">http://dbpedia.org/resource/</a>”)</p></li>
+<li><p><strong>obj</strong> (<em>str</em>) – triple’s Object</p></li>
+<li><p><strong>transitive</strong> (<em>bool</em>) – whether a check should also be done for entities that are in the sameAs Relation with the Subject</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>list or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.kgwrapper.KnowledgeGraphWrapper.get_same_entities">
+<code class="sig-name descname"><span class="pre">get_same_entities</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entity</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.kgwrapper.KnowledgeGraphWrapper.get_same_entities" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return DBpedia entities that have the owl:sameAs relation with the input.
+They should be considered as the same entity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>entity</strong> (<em>str</em>) – a DBpedia resource/entity (must be prepended by “<a class="reference external" href="http://dbpedia.org/resource/">http://dbpedia.org/resource/</a>”)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a list of DBpedia entities that have the owl:sameAs relation with the input</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.kgwrapper.KnowledgeGraphWrapper.get_triples">
+<code class="sig-name descname"><span class="pre">get_triples</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subject</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transitive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.kgwrapper.KnowledgeGraphWrapper.get_triples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get triples from Knowledge Graph that have the given Subject and Relation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>subject</strong> (<em>str</em>) – triple’s Subject (must be prepended by “<a class="reference external" href="http://dbpedia.org/resource/">http://dbpedia.org/resource/</a>”)</p></li>
+<li><p><strong>relation</strong> – triple’s Relation (must be prepended by “<a class="reference external" href="http://dbpedia.org/ontology/">http://dbpedia.org/ontology/</a>”)</p></li>
+<li><p><strong>transitive</strong> (<em>bool</em>) – whether a check should also be done for entities that are in the sameAs Relation with the Subject</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of triples (triple.Triple) that exist in the knowledge graph, or None if such triple doesn’t exist</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.kgwrapper.KnowledgeGraphWrapper.insert_triple">
+<code class="sig-name descname"><span class="pre">insert_triple</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subject</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obj</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.kgwrapper.KnowledgeGraphWrapper.insert_triple" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inserts triple to the knowledge graph</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>subject</strong> (<em>str</em>) – triple’s Subject (must be prepended by “<a class="reference external" href="http://dbpedia.org/resource/">http://dbpedia.org/resource/</a>”)</p></li>
+<li><p><strong>relation</strong> (<em>str</em>) – triple’s Relation/predicate/property (must be prepended by “<a class="reference external" href="http://dbpedia.org/ontology/">http://dbpedia.org/ontology/</a>”)</p></li>
+<li><p><strong>obj</strong> (<em>str</em>) – triple’s Object</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.kgwrapper.KnowledgeGraphWrapper.insert_triple_object">
+<code class="sig-name descname"><span class="pre">insert_triple_object</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">triple</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.kgwrapper.KnowledgeGraphWrapper.insert_triple_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inserts triple to the Knowledge Graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>triple</strong> (<a class="reference internal" href="#common.triple.Triple" title="common.triple.Triple"><em>triple.Triple</em></a>) – a triple of type triple.Triple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.kgwrapper.KnowledgeGraphWrapper.remove_sameAs_relation">
+<code class="sig-name descname"><span class="pre">remove_sameAs_relation</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entity_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entity_b</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.kgwrapper.KnowledgeGraphWrapper.remove_sameAs_relation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove the sameAs relation between two entities.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>entity_a</strong> (<em>str</em>) – a DBpedia resource/entity (must be prepended by “<a class="reference external" href="http://dbpedia.org/resource/">http://dbpedia.org/resource/</a>”)</p></li>
+<li><p><strong>entity_b</strong> (<em>str</em>) – a DBpedia resource/entity (must be prepended by “<a class="reference external" href="http://dbpedia.org/resource/">http://dbpedia.org/resource/</a>”)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-common.triple">
+<span id="common-triple-module"></span><h2>common.triple module<a class="headerlink" href="#module-common.triple" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="common.triple.Triple">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">common.triple.</span></code><code class="sig-name descname"><span class="pre">Triple</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subject</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objects</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.triple.Triple" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class representation of a Triple, consisting  of Subject, Relation, and Objects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>subject</strong> (<em>str</em>) – Subject of the triple</p></li>
+<li><p><strong>relation</strong> (<em>str</em>) – Relation or predicate of the triple</p></li>
+<li><p><strong>objects</strong> (<em>list</em>) – list of Objects of the triple</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="common.triple.Triple.from_dict">
+<em class="property"><span class="pre">static</span> </em><code class="sig-name descname"><span class="pre">from_dict</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dic</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.triple.Triple.from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a Triple object from the given dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dic</strong> (<em>dict</em>) – dictionary representation of a triple {“subject”:…, “relation”:…, “objects”: […]}</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the Triple object</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#common.triple.Triple" title="common.triple.Triple">triple.Triple</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.triple.Triple.from_json">
+<em class="property"><span class="pre">static</span> </em><code class="sig-name descname"><span class="pre">from_json</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">json_data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.triple.Triple.from_json" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a Triple object from the given JSON string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>json_data</strong> (<em>str</em>) – JSON string representation of a triple ‘{“subject”:…, “relation”:…, “objects”: […]}’</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the Triple object</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#common.triple.Triple" title="common.triple.Triple">triple.Triple</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.triple.Triple.to_dict">
+<code class="sig-name descname"><span class="pre">to_dict</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#common.triple.Triple.to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dictionary representation of the Triple.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>dictionary representation of the Triple</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.triple.Triple.to_json">
+<code class="sig-name descname"><span class="pre">to_json</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#common.triple.Triple.to_json" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a JSON representation of the Triple.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>JSON representation of the Triple</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-common.tripleextractors">
+<span id="common-tripleextractors-module"></span><h2>common.tripleextractors module<a class="headerlink" href="#module-common.tripleextractors" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="common.tripleextractors.IITExtractor">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">common.tripleextractors.</span></code><code class="sig-name descname"><span class="pre">IITExtractor</span></code><a class="headerlink" href="#common.tripleextractors.IITExtractor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#common.tripleextractors.TripleExtractor" title="common.tripleextractors.TripleExtractor"><code class="xref py py-class docutils literal notranslate"><span class="pre">common.tripleextractors.TripleExtractor</span></code></a></p>
+<p>Triple extraction using IIT OpenIE (<a class="reference external" href="https://github.com/vaibhavad/python-wrapper-OpenIE5">https://github.com/vaibhavad/python-wrapper-OpenIE5</a>).</p>
+<dl class="py method">
+<dt id="common.tripleextractors.IITExtractor.extract">
+<code class="sig-name descname"><span class="pre">extract</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">document</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.tripleextractors.IITExtractor.extract" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract SPO triples from document.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>document</strong> (<em>str</em>) – document</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of triples</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="common.tripleextractors.StanfordExtractor">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">common.tripleextractors.</span></code><code class="sig-name descname"><span class="pre">StanfordExtractor</span></code><a class="headerlink" href="#common.tripleextractors.StanfordExtractor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#common.tripleextractors.TripleExtractor" title="common.tripleextractors.TripleExtractor"><code class="xref py py-class docutils literal notranslate"><span class="pre">common.tripleextractors.TripleExtractor</span></code></a></p>
+<p>Triple extraction using Stanford OpenIE (<a class="reference external" href="https://github.com/Lynten/stanford-corenlp">https://github.com/Lynten/stanford-corenlp</a>).</p>
+<dl class="py method">
+<dt id="common.tripleextractors.StanfordExtractor.extract">
+<code class="sig-name descname"><span class="pre">extract</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">document</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.tripleextractors.StanfordExtractor.extract" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract SPO triples from document</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>document</strong> (<em>str</em>) – document</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of triples</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="common.tripleextractors.StanfordExtractor.props">
+<code class="sig-name descname"><span class="pre">props</span></code><em class="property"> <span class="pre">=</span> <span class="pre">{'annotators':</span> <span class="pre">'openie',</span> <span class="pre">'outputFormat':</span> <span class="pre">'json',</span> <span class="pre">'pipelineLanguage':</span> <span class="pre">'en'}</span></em><a class="headerlink" href="#common.tripleextractors.StanfordExtractor.props" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="common.tripleextractors.TripleExtractor">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">common.tripleextractors.</span></code><code class="sig-name descname"><span class="pre">TripleExtractor</span></code><a class="headerlink" href="#common.tripleextractors.TripleExtractor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<p>Abstract class of Triple Extractor</p>
+<dl class="py method">
+<dt id="common.tripleextractors.TripleExtractor.extract">
+<em class="property"><span class="pre">abstract</span> </em><code class="sig-name descname"><span class="pre">extract</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">document</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.tripleextractors.TripleExtractor.extract" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract SPO triples from document</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>document</strong> (<em>str</em>) – document</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of triples</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-common.tripleproducer">
+<span id="common-tripleproducer-module"></span><h2>common.tripleproducer module<a class="headerlink" href="#module-common.tripleproducer" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="common.tripleproducer.TripleProducer">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">common.tripleproducer.</span></code><code class="sig-name descname"><span class="pre">TripleProducer</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">extractor_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extraction_scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.tripleproducer.TripleProducer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>TripleProducer produces SPO triples from sentences, where the Subjects and Objects are linked to DBpedia
+entity resources. and the Predicates (Relations) are linked to DBpedia Ontology, whenever possible.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>extractor_type</strong> (<em>str</em>) – SPO extractor tool. ‘stanford_openie’ or ‘iit_openie’ can be chosen as the SPO extractor,
+defaults to ‘stanford_openie’ for now.</p></li>
+<li><p><strong>extraction_scope</strong> (<em>str</em>) – The scope of the extraction, deciding whether it should include only relations between
+‘named_entities’, ‘noun_phrases’, or ‘all’, defaults to ‘named entities’ for now.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="common.tripleproducer.TripleProducer.FALCON_URL">
+<code class="sig-name descname"><span class="pre">FALCON_URL</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'https://labs.tib.eu/falcon/api?mode=long'</span></em><a class="headerlink" href="#common.tripleproducer.TripleProducer.FALCON_URL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="common.tripleproducer.TripleProducer.SPOTLIGHT_URL">
+<code class="sig-name descname"><span class="pre">SPOTLIGHT_URL</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'https://api.dbpedia-spotlight.org/en/annotate?'</span></em><a class="headerlink" href="#common.tripleproducer.TripleProducer.SPOTLIGHT_URL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="common.tripleproducer.TripleProducer.convert_relations">
+<code class="sig-name descname"><span class="pre">convert_relations</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">all_triples</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.tripleproducer.TripleProducer.convert_relations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepend all relations with “<a class="reference external" href="http://dbpedia.org/ontology/">http://dbpedia.org/ontology/</a>”, even if the relation doesn’t exist in DBpedia.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>all_triples</strong> (<em>list</em>) – list of list of triples (top-level list represents sentences)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of list of triples, where relations have been converted</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.tripleproducer.TripleProducer.coref_resolution">
+<code class="sig-name descname"><span class="pre">coref_resolution</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spacy_doc</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.tripleproducer.TripleProducer.coref_resolution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform coreference resolution on the document using neuralcoref.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>spacy_doc</strong> (<em>spacy.tokens.Doc</em>) – document</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Unicode representation of the doc where each corefering mention is replaced by the main mention in the
+associated cluster.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.tripleproducer.TripleProducer.extract_triples">
+<code class="sig-name descname"><span class="pre">extract_triples</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sentences</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.tripleproducer.TripleProducer.extract_triples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract triples from document using the implementation of TripleExtractor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>sentences</strong> (<em>list</em>) – list of document sentences</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a list of list of raw triples (top-level list represents sentences)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.tripleproducer.TripleProducer.filter_in_named_entities">
+<code class="sig-name descname"><span class="pre">filter_in_named_entities</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spacy_doc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all_triples</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.tripleproducer.TripleProducer.filter_in_named_entities" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filter in only triples where the Subject and Object are both named entities.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>spacy_doc</strong> (<em>spacy.tokens.Doc</em>) – spacy document</p></li>
+<li><p><strong>all_triples</strong> (<em>list</em>) – a list of list of triples (top-level list represents sentences)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a list of list of triples in which the Subjects and Objects are all named entities</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.tripleproducer.TripleProducer.filter_in_noun_phrases">
+<code class="sig-name descname"><span class="pre">filter_in_noun_phrases</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spacy_doc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all_triples</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.tripleproducer.TripleProducer.filter_in_noun_phrases" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filter in only triples where the Subject and Object are both (in the list of) noun phrases.
+The list of noun phrases is generated from the spacy document.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>spacy_doc</strong> (<em>spacy.tokens.Doc</em>) – spacy document</p></li>
+<li><p><strong>all_triples</strong> (<em>list</em>) – a list of list of triples (top-level list represents sentences)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a list of list of triples in which the Subjects and Objects are all noun phrases</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.tripleproducer.TripleProducer.filter_noun_phrases">
+<code class="sig-name descname"><span class="pre">filter_noun_phrases</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">all_triples</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.tripleproducer.TripleProducer.filter_noun_phrases" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filter in only triples where the Subject and Object are both noun phrases.
+Whether subject or object is a noun phrase or not is determined by making each subject and object into Spacy
+document, and then check if it is a noun phrase or not, or if it is a noun or not.
+Due to the Spacy document being created for all subjects and objects, this method is slower than the other
+method above.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>all_triples</strong> (<em>list</em>) – a list of list of triples (top-level list represents sentences)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a list of list of triples in which the Subjects and Objects are all noun phrases</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.tripleproducer.TripleProducer.lemmatise_relations">
+<code class="sig-name descname"><span class="pre">lemmatise_relations</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spacy_doc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all_triples</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.tripleproducer.TripleProducer.lemmatise_relations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lemmatise relations to their base forms.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>spacy_doc</strong> (<em>spacy.tokens.Doc</em>) – spacy document</p></li>
+<li><p><strong>all_triples</strong> (<em>list</em>) – list of list of triples (top-level list represents sentences)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of list of triples where relations have been lemmatised</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.tripleproducer.TripleProducer.link_relations">
+<code class="sig-name descname"><span class="pre">link_relations</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sentences</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all_triples</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.tripleproducer.TripleProducer.link_relations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Link relations to DBpedia Ontology using Falcon (<a class="reference external" href="https://labs.tib.eu/falcon/">https://labs.tib.eu/falcon/</a>), if available.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sentences</strong> (<em>list</em>) – list of document sentences</p></li>
+<li><p><strong>all_triples</strong> (<em>list</em>) – list of list of triples (top-level list represents sentences)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>new list of list of triples with dbpedia relations</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.tripleproducer.TripleProducer.produce_triples">
+<code class="sig-name descname"><span class="pre">produce_triples</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">document</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extraction_scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.tripleproducer.TripleProducer.produce_triples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Produce triples extracted from the document that are processed through the pipeline.
+The triples produced are in the form of:</p>
+<p>[ (sentence, [{‘subject’: subject, ‘relation’: relation, ‘object’:[object_1, object2, …], …]),
+…
+]</p>
+<p>The Subjects and Objects are linked to DBpedia entity resources, while the Relations are linked to DBpedia
+Ontology, whenever possible.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>document</strong> (<em>str</em>) – raw texts of document</p></li>
+<li><p><strong>extraction_scope</strong> (<em>str</em>) – The scope of the extraction, deciding whether it should include only relations between
+‘named_entities’, ‘noun_phrases’, or ‘all. Defaults to the extraction_scope member variable.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a list of tuples, of sentence and its triples, as explained</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.tripleproducer.TripleProducer.remove_empty_components">
+<code class="sig-name descname"><span class="pre">remove_empty_components</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">all_triples</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.tripleproducer.TripleProducer.remove_empty_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove triple with empty components (Subject, Relation, or Object).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>all_triples</strong> (<em>list</em>) – list of triples</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of triples without empty components</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.tripleproducer.TripleProducer.remove_stopwords">
+<code class="sig-name descname"><span class="pre">remove_stopwords</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">all_triples</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.tripleproducer.TripleProducer.remove_stopwords" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove stopwords from individual Subject and Object.
+Currently, this is only done when the extraction scope is ‘named_entities’ or ‘noun_phrases’.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>all_triples</strong> (<em>list</em>) – a list of list of triples (top-level list represent sentences)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a list of list of triples in which stopwords have been removed from the Subjects and Objects</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.tripleproducer.TripleProducer.spot_entities_with_context">
+<code class="sig-name descname"><span class="pre">spot_entities_with_context</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">document</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all_triples</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.tripleproducer.TripleProducer.spot_entities_with_context" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert Subjects and Objects to DBpedia entity resources (i.e. in the form of ‘<a class="reference external" href="http://dbpedia.org/resource/">http://dbpedia.org/resource/</a>…’),
+if they are spotted using DBpedia Spotlight API.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>document</strong> (<em>str</em>) – document</p></li>
+<li><p><strong>all_triples</strong> (<em>list</em>) – a list of list of triples (top-level list represents sentences)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a list of list of triples where the Subjects and Objects have been replaced with DBpedia entity resources,
+if possible</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="common.tripleproducer.TripleProducer.spot_local_entities">
+<code class="sig-name descname"><span class="pre">spot_local_entities</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">all_triples</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.tripleproducer.TripleProducer.spot_local_entities" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepend all subjects with “<a class="reference external" href="http://dbpedia.org/resource/">http://dbpedia.org/resource/</a>” if the subject hasn’t been spotted yet as a DBpedia entity.
+For objects, check first if such entity exists in the local knowledge graph (may not exist in DBpedia Spotlight KG).
+If yes, convert the object to the DBpedia resource format.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>all_triples</strong> (<em>list</em>) – list of list of triples (top-level list represents sentences)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of list of triples, where all subjects are dbpedia resources
+and objects that exist in the local KG also converted to dbpedia resources</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-common.utils">
+<span id="common-utils-module"></span><h2>common.utils module<a class="headerlink" href="#module-common.utils" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="common.utils.camelise">
+<code class="sig-prename descclassname"><span class="pre">common.utils.</span></code><code class="sig-name descname"><span class="pre">camelise</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sentence</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.utils.camelise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Util function to convert words into camelCase</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>sentence</strong> (<em>str</em>) – sentence</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>camelCase words</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="common.utils.convert_to_dbpedia_ontology">
+<code class="sig-prename descclassname"><span class="pre">common.utils.</span></code><code class="sig-name descname"><span class="pre">convert_to_dbpedia_ontology</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predicate</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.utils.convert_to_dbpedia_ontology" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts a relation or predicate string to a DBpedia format (<a class="reference external" href="http://dbpedia.org/ontology/">http://dbpedia.org/ontology/</a>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>predicate</strong> (<em>str</em>) – relation string</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>DBpedia ontology string</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="common.utils.convert_to_dbpedia_resource">
+<code class="sig-prename descclassname"><span class="pre">common.utils.</span></code><code class="sig-name descname"><span class="pre">convert_to_dbpedia_resource</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resource</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#common.utils.convert_to_dbpedia_resource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts a resource string to a DBpedia format (<a class="reference external" href="http://dbpedia.org/resource/">http://dbpedia.org/resource/</a>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>resource</strong> (<em>str</em>) – resource string</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>DBpedia resource string</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">common package</a><ul>
+<li><a class="reference internal" href="#module-common.entitycorefresolver">common.entitycorefresolver module</a></li>
+<li><a class="reference internal" href="#module-common.kgwrapper">common.kgwrapper module</a></li>
+<li><a class="reference internal" href="#module-common.triple">common.triple module</a></li>
+<li><a class="reference internal" href="#module-common.tripleextractors">common.tripleextractors module</a></li>
+<li><a class="reference internal" href="#module-common.tripleproducer">common.tripleproducer module</a></li>
+<li><a class="reference internal" href="#module-common.utils">common.utils module</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="modules.html"
+                        title="previous chapter">fake-news-detection</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="factcheckers.html"
+                        title="next chapter">factcheckers package</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/common.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="factcheckers.html" title="factcheckers package"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="modules.html" title="fake-news-detection"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Fake News Detection  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" >fake-news-detection</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">common package</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Albertus Andito.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.4.
+    </div>
+  </body>
+</html>

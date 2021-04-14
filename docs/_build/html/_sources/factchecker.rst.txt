@@ -1,0 +1,37 @@
+factchecker package
+===================
+
+Submodules
+----------
+
+factchecker.exactmatchfactchecker module
+----------------------------------------
+
+.. automodule:: factchecker.exactmatchfactchecker
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+factchecker.factchecker module
+------------------------------
+
+.. automodule:: factchecker.factchecker
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+factchecker.nonexactmatchfactchecker module
+-------------------------------------------
+
+.. automodule:: factchecker.nonexactmatchfactchecker
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: factchecker
+   :members:
+   :undoc-members:
+   :show-inheritance:

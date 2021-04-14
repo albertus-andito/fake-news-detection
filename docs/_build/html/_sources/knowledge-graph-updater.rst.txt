@@ -1,0 +1,29 @@
+knowledge\-graph\-updater package
+=================================
+
+Submodules
+----------
+
+knowledge\-graph\-updater.kgupdater module
+------------------------------------------
+
+.. automodule:: knowledge-graph-updater.kgupdater
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+knowledge\-graph\-updater.kgupdaterrunner module
+------------------------------------------------
+
+.. automodule:: knowledge-graph-updater.kgupdaterrunner
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: knowledge-graph-updater
+   :members:
+   :undoc-members:
+   :show-inheritance:

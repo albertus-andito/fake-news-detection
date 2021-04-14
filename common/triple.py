@@ -1,15 +1,15 @@
 import json
-import pprint
 
 
 class Triple:
     """
-    Class representation of a Triple, consisting  of subject, relation, and objects.
-    :param subject: subject
+    Class representation of a Triple, consisting  of Subject, Relation, and Objects.
+
+    :param subject: Subject of the triple
     :type subject: str
-    :param relation: relation or predicate
+    :param relation: Relation or predicate of the triple
     :type relation: str
-    :param objects: list of objects
+    :param objects: list of Objects of the triple
     :type objects: list
 
     """
@@ -36,7 +36,8 @@ class Triple:
 
     def to_json(self):
         """
-        Returns a JSON representation of the Triple
+        Returns a JSON representation of the Triple.
+
         :return: JSON representation of the Triple
         :rtype: str
         """
@@ -45,8 +46,10 @@ class Triple:
     @staticmethod
     def from_json(json_data):
         """
-        Creates a Triple object from the given JSON string
+        Creates a Triple object from the given JSON string.
+
         :param json_data: JSON string representation of a triple '{"subject":..., "relation":..., "objects": [...]}'
+        :type json_data: str
         :return: the Triple object
         :rtype: triple.Triple
         """
@@ -54,7 +57,8 @@ class Triple:
 
     def to_dict(self):
         """
-        Returns a dictionary representation of the Triple
+        Returns a dictionary representation of the Triple.
+
         :return: dictionary representation of the Triple
         :rtype: dict
         """
@@ -63,28 +67,11 @@ class Triple:
     @staticmethod
     def from_dict(dic):
         """
-        Creates a Triple object from the given dictionary
+        Creates a Triple object from the given dictionary.
+
         :param dic: dictionary representation of a triple {"subject":..., "relation":..., "objects": [...]}
+        :type dic: dict
         :return: the Triple object
         :rtype: triple.Triple
         """
         return Triple(dic["subject"], dic["relation"], dic["objects"])
-
-
-if __name__ == '__main__':
-    triple = Triple('UV rays', 'cure', ['abc', 'COVID 19'])
-    triple2 = Triple('UV rays', 'cure', ['COVID 19', 'abc'])
-    triple3 = Triple()
-    pprint.pprint(triple.to_json())
-    print(triple.__eq__(triple2))
-    print(triple.subject)
-
-    dic = {
-        "subject": "UV rays",
-        "relation": "cure",
-        "objects": ["abc", "COVID 19"]
-    }
-    print(Triple.from_dict(dic))
-
-    data = '{"subject": "UV rays", "relation": "cure", "objects": ["COVID 19", "abc"]}'
-    print(Triple.from_json(data).objects[0])

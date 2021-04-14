@@ -9,7 +9,7 @@ from definitions import ROOT_DIR, LOGGER_CONFIG_PATH
 from kgwrapper import KnowledgeGraphWrapper
 from triple import Triple
 from tripleextractors import StanfordExtractor, IITExtractor
-from utils import convert_to_dbpedia_ontology
+from utils import convert_to_dbpedia_ontology, DBPEDIA_RESOURCE
 
 import json
 import neuralcoref
@@ -24,10 +24,10 @@ class TripleProducer:
     entity resources. and the Predicates (Relations) are linked to DBpedia Ontology, whenever possible.
 
     :param extractor_type: SPO extractor tool. 'stanford_openie' or 'iit_openie' can be chosen as the SPO extractor,
-    defaults to 'iit_openie' for now.
+        defaults to 'stanford_openie' for now.
     :type extractor_type: str
     :param extraction_scope: The scope of the extraction, deciding whether it should include only relations between
-    'named_entities', 'noun_phrases', or 'all', defaults to 'named entities' for now.
+        'named_entities', 'noun_phrases', or 'all', defaults to 'named entities' for now.
     :type extraction_scope: str
 
     """
@@ -39,9 +39,9 @@ class TripleProducer:
         Constructor method
         """
         # Triple extractor setup
-        if extractor_type == 'stanford_openie':
+        if extractor_type == 'stanford_openie' or extractor_type is None:
             self.extractor = StanfordExtractor()
-        elif extractor_type == 'iit_openie' or extractor_type is None:
+        elif extractor_type == 'iit_openie':
             self.extractor = IITExtractor()
         else:
             raise ValueError("The extractor_type is unrecognised. Use 'stanford_openie' or 'iit_openie'.")
@@ -71,8 +71,9 @@ class TripleProducer:
         """
         Produce triples extracted from the document that are processed through the pipeline.
         The triples produced are in the form of:
+
         [ (sentence, [{'subject': subject, 'relation': relation, 'object':[object_1, object2, ...], ...]),
-          ...
+        ...
         ]
 
         The Subjects and Objects are linked to DBpedia entity resources, while the Relations are linked to DBpedia
@@ -81,7 +82,7 @@ class TripleProducer:
         :param document: raw texts of document
         :type document: str
         :param extraction_scope: The scope of the extraction, deciding whether it should include only relations between
-        'named_entities', 'noun_phrases', or 'all. Defaults to the extraction_scope member variable.
+            'named_entities', 'noun_phrases', or 'all. Defaults to the extraction_scope member variable.
         :type extraction_scope: str
         :return: a list of tuples, of sentence and its triples, as explained
         :rtype: list
@@ -155,14 +156,24 @@ class TripleProducer:
     def coref_resolution(self, spacy_doc):
         """
         Perform coreference resolution on the document using neuralcoref.
+
         :param spacy_doc: document
         :type spacy_doc: spacy.tokens.Doc
         :return: Unicode representation of the doc where each corefering mention is replaced by the main mention in the
-        associated cluster.
+            associated cluster.
+        :rtype: str
         """
         return spacy_doc._.coref_resolved
 
     def __capitalise_sentence_start(self, document):
+        """
+        Make the start of the sentences uppercase.
+
+        :param document: text
+        :type document: str
+        :return: text where starts of sentences are uppercase
+        :rtype: str
+        """
         sentences = document.split('. ')
         capitalised = [sentence[0].capitalize() + sentence[1:] for sentence in sentences if len(sentence) > 0]
         return '. '.join(capitalised)
@@ -170,6 +181,7 @@ class TripleProducer:
     def extract_triples(self, sentences):
         """
         Extract triples from document using the implementation of TripleExtractor.
+
         :param sentences: list of document sentences
         :type sentences: list
         :return: a list of list of raw triples (top-level list represents sentences)
@@ -179,12 +191,13 @@ class TripleProducer:
             triples = [self.extractor.extract(sentence) for sentence in sentences]
             return triples
         except JSONDecodeError as e:
-            self.logger.error('Triple extraction erro')
+            self.logger.error('Triple extraction error')
 
     def remove_stopwords(self, all_triples):
         """
         Remove stopwords from individual Subject and Object.
         Currently, this is only done when the extraction scope is 'named_entities' or 'noun_phrases'.
+
         :param all_triples: a list of list of triples (top-level list represent sentences)
         :type all_triples: list
         :return: a list of list of triples in which stopwords have been removed from the Subjects and Objects
@@ -201,7 +214,8 @@ class TripleProducer:
 
     def filter_in_named_entities(self, spacy_doc, all_triples):
         """
-        Filter in only triples where the Subject and Object are both named entities
+        Filter in only triples where the Subject and Object are both named entities.
+
         :param spacy_doc: spacy document
         :type spacy_doc: spacy.tokens.Doc
         :param all_triples: a list of list of triples (top-level list represents sentences)
@@ -217,6 +231,7 @@ class TripleProducer:
         """
         Filter in only triples where the Subject and Object are both (in the list of) noun phrases.
         The list of noun phrases is generated from the spacy document.
+
         :param spacy_doc: spacy document
         :type spacy_doc: spacy.tokens.Doc
         :param all_triples: a list of list of triples (top-level list represents sentences)
@@ -234,6 +249,7 @@ class TripleProducer:
         document, and then check if it is a noun phrase or not, or if it is a noun or not.
         Due to the Spacy document being created for all subjects and objects, this method is slower than the other
         method above.
+
         :param all_triples: a list of list of triples (top-level list represents sentences)
         :type all_triples: list
         :return: a list of list of triples in which the Subjects and Objects are all noun phrases
@@ -260,6 +276,7 @@ class TripleProducer:
     def __filter(self, in_list, all_triples):
         """
         Filter in only triples where the Subject and Object are in the in_list argument.
+
         :param in_list: list of acceptable Subjects and Objects
         :type in_list: list
         :param all_triples: a list of list of triples (top-level list represents sentences)
@@ -304,12 +321,13 @@ class TripleProducer:
         """
         Convert Subjects and Objects to DBpedia entity resources (i.e. in the form of 'http://dbpedia.org/resource/...'),
         if they are spotted using DBpedia Spotlight API.
+
         :param document: document
         :type document: str
         :param all_triples: a list of list of triples (top-level list represents sentences)
         :type all_triples: list
         :return: a list of list of triples where the Subjects and Objects have been replaced with DBpedia entity resources,
-        if possible
+            if possible
         :rtype: list
         """
         # Do we need to split the sentences first or not? May help with context if not?
@@ -347,20 +365,20 @@ class TripleProducer:
         Prepend all subjects with "http://dbpedia.org/resource/" if the subject hasn't been spotted yet as a DBpedia entity.
         For objects, check first if such entity exists in the local knowledge graph (may not exist in DBpedia Spotlight KG).
         If yes, convert the object to the DBpedia resource format.
+
         :param all_triples: list of list of triples (top-level list represents sentences)
         :type all_triples: list
         :return: list of list of triples, where all subjects are dbpedia resources
-        and objects that exist in the local KG also converted to dbpedia resources
+            and objects that exist in the local KG also converted to dbpedia resources
         :rtype: list
         """
-        dbpedia = "http://dbpedia.org/resource/"
         for sentence in all_triples:
             for triple in sentence:
                 # subject needs to be resource, regardless of its existence
-                if not triple.subject.startswith(dbpedia):
-                    triple.subject = dbpedia + triple.subject.replace(" ", "_")
-                triple.objects = [dbpedia + obj.replace(" ", "_") if obj and not obj.startswith(dbpedia) and
-                                  self.knowledge_graph.check_resource_existence(dbpedia + obj.replace(" ", "_"))
+                if not triple.subject.startswith(DBPEDIA_RESOURCE):
+                    triple.subject = DBPEDIA_RESOURCE + triple.subject.replace(" ", "_")
+                triple.objects = [DBPEDIA_RESOURCE + obj.replace(" ", "_") if obj and not obj.startswith(DBPEDIA_RESOURCE) and
+                                  self.knowledge_graph.check_resource_existence(DBPEDIA_RESOURCE + obj.replace(" ", "_"))
                                   else obj for obj in triple.objects]
         return all_triples
 
@@ -368,6 +386,7 @@ class TripleProducer:
         """
         Find DBpedia resource for a given subject/object where the DBpedia resource is a substring of the subject/object.
         If such resource does not exist, return the original subject/object.
+
         :param obj: subject/object
         :type obj: str
         :param entities: a dictionary of entities as keys and their DBpedia URI as items
@@ -384,12 +403,13 @@ class TripleProducer:
     def link_relations(self, sentences, all_triples):
         """
         Link relations to DBpedia Ontology using Falcon (https://labs.tib.eu/falcon/), if available.
+
         :param sentences: list of document sentences
         :type sentences: list
         :param all_triples: list of list of triples (top-level list represents sentences)
         :type all_triples: list
         :return: new list of list of triples with dbpedia relations
-        :rtype list
+        :rtype: list
         """
         new_triples = []
         for sentence, triples in zip(sentences, all_triples):
@@ -436,6 +456,7 @@ class TripleProducer:
     def lemmatise_relations(self, spacy_doc, all_triples):
         """
         Lemmatise relations to their base forms.
+
         :param spacy_doc: spacy document
         :type spacy_doc: spacy.tokens.Doc
         :param all_triples: list of list of triples (top-level list represents sentences)
@@ -458,10 +479,14 @@ class TripleProducer:
 
     def __get_lemma(self, token, spacy_doc):
         """
-        Find the lemma based on the token's appearence in the text
-        :param token:
-        :param spacy_doc:
+        Find the lemma based on the token's appearance in the text.
+
+        :param token: the token whose lemma is to be found
+        :type token: str
+        :param spacy_doc: spacy document of the text
+        :type spacy_doc: spacy.tokens.Doc
         :return: lemma of the token
+        :rtype: str
         """
         matcher = Matcher(self.nlp.vocab)
         matcher.add(token, None, [{"TEXT": token}])
@@ -473,6 +498,7 @@ class TripleProducer:
     def convert_relations(self, all_triples):
         """
         Prepend all relations with "http://dbpedia.org/ontology/", even if the relation doesn't exist in DBpedia.
+
         :param all_triples: list of list of triples (top-level list represents sentences)
         :type all_triples: list
         :return: list of list of triples, where relations have been converted
@@ -484,6 +510,14 @@ class TripleProducer:
         return all_triples
 
     def remove_empty_components(self, all_triples):
+        """
+        Remove triple with empty components (Subject, Relation, or Object).
+
+        :param all_triples: list of triples
+        :type all_triples: list
+        :return: list of triples without empty components
+        :rtype: list
+        """
         return [[triple for triple in sentence
                  if triple.subject != '' and triple.relation != '' and all(obj != '' for obj in triple.objects)]
                 for sentence in all_triples]
@@ -502,45 +536,3 @@ class TripleProducer:
     #             if not triple.subject.startswith(dbpedia):
     #                 triple.subject = dbpedia + triple.subject.replace(" ", "_")
     #     return all_triples
-
-
-# Testing
-if __name__ == "__main__":
-    # iit_producer = TripleProducer(extraction_scope='noun_phrases')
-    stanford_producer = TripleProducer(extractor_type='stanford_openie', extraction_scope='noun_phrases')
-    # iit_producer = TripleProducer(extraction_scope='all')
-    # stanford_producer = TripleProducer(extractor_type='stanford_openie', extraction_scope='all')
-    doc_1 = "Barrack Obama was born in Hawaii. He attended school in Jakarta. Mr Obama was the president of the USA. " \
-            "Mr Obama stayed in White House for 8 years."
-    # doc_1 = "Barrack Obama was born in Hawaii. Obama lives."
-    print(doc_1)
-    # print("IIT:")
-    # pprint.pprint(iit_producer.produce_triples(doc_1))
-    print("Stanford:")
-    pprint.pprint(stanford_producer.produce_triples(doc_1))
-
-    doc = "President Donald Trump's personal lawyer, Rudy Giuliani, has tested positive for Covid-19 and is being treated in hospital.  Mr Giuliani, who has led the Trump campaign's legal challenges to the election results, is the latest person close to the president to be infected.  Since November, he has been on a cross-country tour in an effort to convince state governments to overturn the vote. Like other Trump officials, he has been criticised for shunning face masks. Mr Trump, who was ill with the virus in October, announced the diagnosis in a tweet, writing: \"Get better soon Rudy, we will carry on!\" Mr Giuliani, 76, was admitted to the Medstar Georgetown University Hospital in Washington DC on Sunday. The news came after Mr Giuliani had visited Arizona, Georgia and Michigan all in the past week - where he spoke to government officials while not wearing masks. Following news of Mr Giuliani's diagnosis, the Arizona legislature announced sudden plans to shut down for one week. Several Republican lawmakers there had spent over 10 hours with the former New York mayor last week discussing election results.  Following Mr Giuliani's visit to Phoenix, Arizona, the state's Republican party tweeted a photo of him with other mask-less state lawmakers. In a tweet, Mr Giuliani thanked well-wishers for their messages, and said he was \"recovering quickly\".   His son, Andrew Giuliani, who works at the White House and tested positive for the virus last month, tweeted that his father was \"resting, getting great care and feeling well\".  It is not clear if Mr Giuliani is experiencing symptoms or when he caught the virus.  Nearly 14.6 million people have been infected with Covid-19 in the US, according to Johns Hopkins University, and 281,234 people have died - the highest figures of any country in the world. On Sunday, Dr Deborah Birx, the White House coronavirus task force co-ordinator, criticised the Trump administration for flouting guidelines and peddling \"myths\" about the pandemic.  \"I hear community members parroting back those situations, parroting back that masks don't work, parroting back that we should work towards herd immunity,\" Dr Birx told NBC. \"This is the worst event that this country will face,\" she said. Since the 3 November election, Mr Giuliani has travelled the country as part of unsuccessful efforts to overturn Mr Trump's election defeat. During many of his events, he was seen without a face mask and ignoring social distancing.  Last Wednesday, he appeared at a hearing on alleged election fraud in Michigan where he asked a witness beside him if she would be comfortable removing her face mask. \"I don't want you to do this if you feel uncomfortable, but would you be comfortable taking your mask off, so we can hear you more clearly?\" said Mr Giuliani, who was not wearing a face mask. The witness chose to keep her mask on after asking the panel if she could be heard. On Thursday Mr Giuliani travelled to Georgia where he repeated unsubstantiated claims of voter fraud at a Senate committee hearing about election security.  Dozens of people in Mr Trump's orbit are said to have tested positive for Covid-19 since October.  Boris Epshteyn, another Trump adviser, tested positive shortly after appearing alongside Rudy Giuliani at a news conference on 25 November. Others include the president's chief of staff Mark Meadows and press secretary Kayleigh McEnany, along with his wife Melania and sons Donald Jnr and Baron. Mr Trump's own diagnosis and hospital stay upended his campaign for a second term in office, less than a month before he faced Joe Biden in the presidential election. Mr Trump has refused to concede, insisting without evidence that the election was stolen or rigged. Attorney General William Barr said last week that his department had not seen any evidence of widespread voter fraud that would change the result. Mr Biden will be sworn in as president on 20 January."
-    pprint.pprint(stanford_producer.produce_triples(doc))
-    # doc_2 = "Stores and supermarkets in Veracruz (Mexico) will close due to the new coronavirus. The local government " \
-    #         "has asked people to buy supplies. "
-
-    # doc_2 = "Onion cures COVID19."
-    # print(doc_2)
-    # print("IIT:")
-    # pprint.pprint(iit_producer.produce_triples(doc_2))
-    # print("Stanford:")
-    # pprint.pprint(stanford_producer.produce_triples(doc_2))
-    #
-    # doc_3 = "Biomagnetism cures coronavirus."
-    # print(doc_3)
-    # print("IIT:")
-    # pprint.pprint(iit_producer.produce_triples(doc_3))
-    # print("Stanford:")
-    # pprint.pprint(stanford_producer.produce_triples(doc_3))
-    #
-    # doc_4 = "UV rays from the sun can cure COVID-19."
-    # print(doc_4)
-    # print("IIT:")
-    # pprint.pprint(iit_producer.produce_triples(doc_4))
-    # print("Stanford:")
-    # pprint.pprint(stanford_producer.produce_triples(doc_4))

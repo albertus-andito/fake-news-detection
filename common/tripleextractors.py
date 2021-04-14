@@ -29,6 +29,7 @@ class TripleExtractor(ABC):
     def extract(self, document):
         """
         Extract SPO triples from document
+
         :param document: document
         :type document: str
         :return: list of triples
@@ -39,7 +40,7 @@ class TripleExtractor(ABC):
 
 class StanfordExtractor(TripleExtractor):
     """
-    Triple extraction using Stanford OpenIE (https://github.com/Lynten/stanford-corenlp)
+    Triple extraction using Stanford OpenIE (https://github.com/Lynten/stanford-corenlp).
     """
     props = {'annotators': 'openie', 'pipelineLanguage': 'en', 'outputFormat': 'json'}
 
@@ -55,6 +56,7 @@ class StanfordExtractor(TripleExtractor):
     def extract(self, document):
         """
         Extract SPO triples from document
+
         :param document: document
         :type document: str
         :return: list of triples
@@ -72,7 +74,7 @@ class StanfordExtractor(TripleExtractor):
 
 class IITExtractor(TripleExtractor):
     """
-    Triple extraction using IIT OpenIE (https://github.com/vaibhavad/python-wrapper-OpenIE5)
+    Triple extraction using IIT OpenIE (https://github.com/vaibhavad/python-wrapper-OpenIE5).
     """
     def __init__(self):
         super(IITExtractor, self).__init__()
@@ -81,7 +83,8 @@ class IITExtractor(TripleExtractor):
 
     def extract(self, document):
         """
-        Extract SPO triples from document
+        Extract SPO triples from document.
+
         :param document: document
         :type document: str
         :return: list of triples
@@ -93,16 +96,3 @@ class IITExtractor(TripleExtractor):
                        for extraction in extractions]
         return all_triples
 
-# Testing
-import pprint
-if __name__ == '__main__':
-    stanford = StanfordExtractor()
-    iit = IITExtractor()
-
-    doc = "Stores and supermarkets in Veracruz (Mexico) will close due to the new coronavirus. The local government " \
-          "has asked people to buy supplies. "
-    stanford_triples = stanford.extract(doc)
-    pprint.pprint(stanford_triples)
-
-    iit_triples = iit.extract(doc)
-    pprint.pprint(iit_triples)

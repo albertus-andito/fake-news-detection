@@ -1,9 +1,12 @@
 from nltk import word_tokenize
 
+DBPEDIA_RESOURCE = "http://dbpedia.org/resource/"
+DBPEDIA_ONTOLOGY = "http://dbpedia.org/ontology/"
 
 def camelise(sentence):
     """
     Util function to convert words into camelCase
+
     :param sentence: sentence
     :type sentence: str
     :return: camelCase words
@@ -19,10 +22,26 @@ def camelise(sentence):
 
 
 def convert_to_dbpedia_resource(resource):
-    if resource.startswith('http://dbpedia.org/resource/'):
+    """
+    Converts a resource string to a DBpedia format (http://dbpedia.org/resource/).
+
+    :param resource: resource string
+    :type resource: str
+    :return: DBpedia resource string
+    :rtype: str
+    """
+    if resource.startswith(DBPEDIA_RESOURCE):
         return resource
-    return 'http://dbpedia.org/resource/' + resource.replace(' ', '_')
+    return DBPEDIA_RESOURCE + resource.replace(' ', '_')
 
 
 def convert_to_dbpedia_ontology(predicate):
-    return 'http://dbpedia.org/ontology/' + camelise(predicate).lstrip()
+    """
+        Converts a relation or predicate string to a DBpedia format (http://dbpedia.org/ontology/).
+
+        :param predicate: relation string
+        :type predicate: str
+        :return: DBpedia ontology string
+        :rtype: str
+        """
+    return DBPEDIA_ONTOLOGY + camelise(predicate).lstrip()

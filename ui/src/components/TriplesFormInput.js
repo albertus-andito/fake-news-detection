@@ -13,7 +13,7 @@ function TriplesFormInput() {
                                 name={[field.name, 'subject']}
                                 fieldKey={[field.fieldKey, 'subject']}
                                 rules={[{ required: true, message: 'Missing subject' }]}
-
+                                style={{ width: '100%', marginRight: 100 }}
                             >
                                 <Input placeholder='Subject' />
                             </Form.Item>
@@ -22,6 +22,7 @@ function TriplesFormInput() {
                                 name={[field.name, 'relation']}
                                 fieldKey={[field.fieldKey, 'relation']}
                                 rules={[{ required: true, message: 'Missing relation' }]}
+                                style={{ width: '100%', marginRight: 100 }}
                             >
                                 <Input placeholder='Relation' />
                             </Form.Item>
@@ -30,6 +31,7 @@ function TriplesFormInput() {
                                 name={[field.name, 'objects']}
                                 fieldKey={[field.fieldKey, 'objects']}
                                 rules={[{ required: true, message: 'Missing object' }]}
+                                style={{ width: '100%', marginRight: 100 }}
                             >
                                 <Input placeholder='Object' />
                             </Form.Item>

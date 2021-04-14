@@ -16,9 +16,10 @@ from tripleproducer import TripleProducer
 
 class KnowledgeGraphUpdater:
     """
-    A Knowledge Graph Updater, which updates the knowledge graph using knowledge from the scraped articles.
+    A Knowledge Graph Updater, which consists of all functionalities related to updating the knowledge graph.
 
-    :param auto_update: whether the knowledge graph will be updated automatically, or wait for user confirmation
+    :param auto_update: whether the knowledge graph will be updated automatically once triples are extracted,
+        or wait for user confirmation
     :type auto_update: bool
     """
 
@@ -49,81 +50,38 @@ class KnowledgeGraphUpdater:
     def update_missed_knowledge(self, kg_auto_update=None, extraction_scope=None):
         """
         Extract triples from stored articles whose triples has not been extracted yet, and save the triples to the DB.
-        Triples that have conflicts in the knowledge graph are identified.
-        If the auto_update mode is active, the non-conflicting triples are added to the knowledge graph.
+        If the auto_update mode is active, the non-conflicting triples are added automatically to the knowledge graph.
+
         :param kg_auto_update: an optional parameter that sets whether the non-conflicting triples are added to the
-        knowledge graph or not. This will only matter if the auto_update field is False. If the auto_update field is
-        already True, then this parameter will not be looked upon.
+            knowledge graph or not. This will only matter if the auto_update field is False. If the auto_update field is
+            already True, then this parameter will not be looked upon.
         :type kg_auto_update: bool
         :param extraction_scope: The scope of the extraction, deciding whether it should include only relations between
-        'named_entities', 'noun_phrases', or 'all.
+            'named_entities', 'noun_phrases', or 'all.
         :type extraction_scope: str
         """
         for article in self.db_article_collection.find({'triples': None}):
             try:
                 self.__extract_and_save_triples(article['source'], article['texts'], extraction_scope, kg_auto_update)
-                # self.logger.info('Extracting triples for article: %s', article['source'])
-                # # set 'added' to False for all triples initially
-                # triples = [{'sentence': results[0],
-                #             'triples': [{**triple.to_dict(), **{'added': False}} for triple in results[1]]}
-                #            for results in self.triple_producer.produce_triples(article['texts'],
-                #                                                                extraction_scope=extraction_scope)]
-
-                # conflicted_triples = []
-                # for sentence in triples:
-                #     for triple in sentence['triples']:
-                #         exists = self.knowledge_graph.check_triple_object_existence(Triple.from_dict(triple))
-                #         # The exact triple already exists in the KG. Mark as added.
-                #         if exists is True:
-                #             triple['added'] = True
-                        # check for conflict
-                #         else:
-                #             conflicts = self.knowledge_graph.get_triples(triple['subject'], triple['relation'])
-                #             if conflicts is not None:
-                #                 a_triple = triple.copy()
-                #                 del a_triple['added']
-                #                 for conflict in conflicts:
-                #                     conflicted_triples.append(
-                #                         {'toBeInserted': a_triple, 'inKnowledgeGraph': conflict.to_dict()})
-                #
-                # self.logger.debug('Found conflicts for article %s: %s', article['source'], conflicted_triples)
-
-                # self.db_article_collection.update_one({'source': article['source']}, {'$set': {'triples': triples}})
-
-                # if len(conflicted_triples) > 0:  # save conflicts
-                #     self.db_article_collection.update_one({'source': article['source']},
-                #                                           {'$set': {'conflicts': conflicted_triples}})
-
-                # if (kg_auto_update is None and self.auto_update) or kg_auto_update:
-                #     self.logger.info('Inserting non conflicting knowledge for ' + article['source'])
-                #     self.insert_all_nonconflicting_knowledge(article['source'])
-
-                # # Get all DBpedia entities from the article's triples
-                # entities = []
-                # for sentence in triples:
-                #     for triple in sentence['triples']:
-                #         entities.append(triple['subject'])
-                #         for obj in triple['objects']:
-                #             if obj.startswith('http://dbpedia.org/resource/'):
-                #                 entities.append(obj)
-                #
-                # # Include only corefering entities that exist in the extracted triples
-                # coref_clusters = [{'main': main,
-                #                    'mentions': [{
-                #                        'mention': mention,
-                #                        'resolved': self.knowledge_graph.check_sameAs_relation(main, mention)}
-                #                        for mention in mentions]}
-                #                   for main, mentions in
-                #                   self.coref_resolver.get_coref_clusters(article['texts']).items()
-                #                   if main in entities]
-                # if len(coref_clusters) > 0:
-                #     self.db_article_collection.update_one({'source': article['source']},
-                #                                           {'$set': {'coref_entities': coref_clusters}})
 
             except Exception as e:
-                self.logger.error("Exception occured when extracting article " + article['source'] + ": " + e.__str__())
+                self.logger.error("Exception occurred when extracting article " + article['source'] + ": " + e.__str__())
 
     def __extract_and_save_triples(self, url, texts, extraction_scope, kg_auto_update):
+        """
+        Private method to extract triples and an article given the URL and save the triples to DB.
+        Non-conflicting triples are added to knowledge graph if kg_auto_update is True.
+
+        :param url: URL of article whose triples are going to be extracted
+        :type url: str
+        :param texts: article text whose triples are going to be extracted
+        :type texts: str
+        :param extraction_scope: The scope of the extraction, deciding whether it should include only relations between
+            'named_entities', 'noun_phrases', or 'all.
+        :type extraction_scope: str
+        :param kg_auto_update: whether the non-conflicting triples are added to the knowledge graph or not.
+        :type kg_auto_update: bool
+        """
         self.logger.info('Extracting triples for article: %s', url)
         # set 'added' to False for all triples initially
         triples = [{'sentence': results[0],
@@ -146,21 +104,13 @@ class KnowledgeGraphUpdater:
     def insert_all_nonconflicting_knowledge(self, article_url):
         """
         Insert non-conflicting triples of an article to the knowledge graph.
+
         :param article_url: URL of the article source
         :type article_url: str
         """
         article = self.db_article_collection.find_one({'source': article_url})
-        # if 'conflicts' in article:
-        #     conflicts = [conflict['toBeInserted'] for conflict in article['conflicts']]
-        # else:
-        #     conflicts = []
-
         for sentence in article['triples']:
             for triple in sentence['triples']:
-                # We need to delete the 'added' field first because we want to check equality with 'conflicts' list.
-                # By default, the 'added' field should have been False anyway at this stage, because the triple hasn't been
-                # inserted.
-                # del triple['added']
                 if self.knowledge_graph.check_triple_object_existence(Triple.from_dict(triple)):
                     triple['added'] = True
                 else:
@@ -177,6 +127,7 @@ class KnowledgeGraphUpdater:
         """
         Delete triples that are extracted from an article, from the knowledge graph.
         Triples from the articles must have been extracted beforehand and stored in DB.
+
         :param article_url: URL of the article source
         :type article_url: str
         """
@@ -189,7 +140,8 @@ class KnowledgeGraphUpdater:
     def delete_knowledge(self, triples):
         """
         Remove triples from knowledge graph.
-        :param triples: list of triples (in form of dictionaries)
+
+        :param triples: list of triples (in the form of dictionaries)
         :type triples: list
         """
         for triple in triples:
@@ -201,18 +153,6 @@ class KnowledgeGraphUpdater:
                                                                    'triple.relation': triple['relation'],
                                                                    'triple.objects': triple['objects']
                                                                    }])
-            # TODO: do we need to care about 'added' in 'conflicts' field?
-            # self.db_article_collection.update_many({'conflicts':
-            #     {'$elemMatch':
-            #         {'inKnowledgeGraph': {
-            #             'subject': triple['subject'],
-            #             'relation': triple['relation'],
-            #             'objects': triple['objects']}
-            #         }
-            #     }
-            # },
-            #     {'$set': {'conflicts.$': None}})
-            # self.db_article_collection.update_many({}, {'$pull': {'conflicts': None}})
             self.db_triples_collection.update_one({'subject': triple['subject'],
                                                    'relation': triple['relation'],
                                                    'objects': triple['objects']},
@@ -221,6 +161,7 @@ class KnowledgeGraphUpdater:
     def get_article_pending_knowledge(self, article_url):
         """
         Returns all pending triples (that are not currently in the knowledge graph) for the specified article.
+
         :param article_url: URL of the article source
         :type article_url: str
         :return: list of pending triples extracted from the article if exist, or None
@@ -235,11 +176,11 @@ class KnowledgeGraphUpdater:
     def delete_article_pending_knowledge(self, article_url, triples):
         """
         Deletes pending article triples, that have been added to the knowledge graph, from the database.
+
         :param article_url: URL of the article source
         :type article_url: str
         :param triples: list of pending triples to be deleted
         :type triples: list
-        :return:
         """
         for sentence in triples:
             for triple in sentence['triples']:
@@ -249,18 +190,11 @@ class KnowledgeGraphUpdater:
                                                                       'relation': triple['relation'],
                                                                       'objects': triple['objects']}}},
                                                       array_filters=[{'sentence.sentence': sentence['sentence']}])
-                # self.db_article_collection.update_one({'source': article_url},
-                #                                       {'$pull': {'conflicts':
-                #                                           {'toBeInserted': {
-                #                                               'subject': triple['subject'],
-                #                                               'relation': triple['relation'],
-                #                                               'objects': triple['objects']}
-                #                                           }
-                #                                       }})
 
     def get_all_pending_knowledge(self):
         """
         Returns all pending triples (that are not currently in the knowledge graph) for all scraped articles.
+
         :return: list of all pending triples extracted from all articles
         :rtype: list
         """
@@ -282,6 +216,7 @@ class KnowledgeGraphUpdater:
         """
         Returns all triples of that have been extracted from the specified article, regardless of whether the triple
         has been added to the knowledge graph or not.
+
         :param article_url: URL of the article source
         :type article_url: str
         :return: list of triples extracted from the article if exist, or None
@@ -295,6 +230,7 @@ class KnowledgeGraphUpdater:
     def get_all_articles_knowledge(self):
         """
         Returns all triples that have been extracted from all scraped articles.
+
         :return: list of all triples extracted from all articles
         :rtype: list
         """
@@ -303,39 +239,10 @@ class KnowledgeGraphUpdater:
         return list(
             self.db_article_collection.find({'triples': {'$exists': True}}, {'source': 1, 'triples': 1, '_id': 0}))
 
-    # def get_article_conflicts(self, article_url):
-    #     """
-    #     Returns conflicted triples of the specified article.
-    #     In this case, conflict means that subject and relation of a triple have already existed in the knowledge graph.
-    #     :param article_url: URL of the article source
-    #     :type article_url: str
-    #     :return: list of conflicted triples (in form of dictionaries) if exist, or None
-    #     :rtype: list or None
-    #     """
-    #     article = self.db_article_collection.find_one({'source': article_url, 'conflicts': {'$exists': True}})
-    #     if article is None:
-    #         return None
-    #     return article['conflicts']
-    #
-    # def get_all_article_conflicts(self):
-    #     """
-    #     Returns all conflicted triples of all scraped articles.
-    #     :return: list of conflicted triples (in form of dictionaries, with their source article url)
-    #     :rtype: list
-    #     """
-    #     # This function is memory expensive if the list is huge. It's better to add pagination etc.
-    #     # TODO: add pagination
-    #     articles = []
-    #     for article in self.db_article_collection.find({'conflicts': {'$exists': True}}):
-    #         articles.append({
-    #             'source': article['source'],
-    #             'conflicts': article['conflicts']
-    #         })
-    #     return articles
-
     def get_all_unresolved_corefering_entities(self):
         """
         Returns all unresolved corefering entities extracted from articles.
+
         :return: list of unresolved corefering entities
         :rtype: list
         """
@@ -354,6 +261,7 @@ class KnowledgeGraphUpdater:
     def insert_entities_equality(self, entity_a, entity_b):
         """
         Resolve two entities as the same.
+
         :param entity_a: a DBpedia resource/entity (must be prepended by "http://dbpedia.org/resource/")
         :type entity_a: str
         :param entity_b: a DBpedia resource/entity (must be prepended by "http://dbpedia.org/resource/")
@@ -366,6 +274,7 @@ class KnowledgeGraphUpdater:
         Insert triples that are related to an article to the knowledge graph.
         If the triple has conflict, mark the conflict as 'added' in the db.
         If the triple doesn't exist on db, add the triple to the db.
+
         :param articles_triples: dictionary of article triples
         :type articles_triples: dict
         """
@@ -382,23 +291,12 @@ class KnowledgeGraphUpdater:
                                                                {'$set': {
                                                                    'triples.$[].triples.$[triple].added': True}},
                                                                array_filters=[
-                                                                   # {'sentence.sentence': stored_sentence['sentence']},
                                                                    {'triple.subject': triple['subject'],
                                                                     'triple.relation': triple['relation'],
                                                                     'triple.objects': triple['objects']
                                                                     }]
                                                                )
-                        # self.db_article_collection.update_many({'source': article['source'],
-                        #                                         'conflicts':
-                        #                                             {'$elemMatch':
-                        #                                                 {'toBeInserted': {
-                        #                                                     'subject': triple['subject'],
-                        #                                                     'relation': triple['relation'],
-                        #                                                     'objects': triple['objects']}
-                        #                                                 }
-                        #                                             }
-                        #                                         },
-                        #                                        {'$set': {'conflicts.$.added': True}})
+
                     # new triple from existing sentence
                     elif stored_sentence is not None:
                         self.db_article_collection.update_one({'source': article['source'],
@@ -427,10 +325,13 @@ class KnowledgeGraphUpdater:
     def insert_knowledge(self, triple, check_conflict):
         """
         Insert triple to the knowledge graph.
-        :param triple:
+
+        :param triple: the triple to be inserted to the knowledge graph
+        :type triple: dict
         :param check_conflict: whether it should check for conflicts first or not.
         :type check_conflict: bool
         :return: list of conflicts if there are conflicts and check_conflict is True, None otherwise
+        :rtype: list or None
         """
         self.db_triples_collection.replace_one({'subject': triple['subject'],
                                                 'relation': triple['relation'],
@@ -453,9 +354,13 @@ class KnowledgeGraphUpdater:
         """
         Returns triple from the knowledge graph that has the given conditions.
         If objects are given, it will return back the triple if it exist in the knowledge graph.
-        :param subject:
-        :param relation:
-        :param objects: optional
+
+        :param subject: subject of the triple in DBpedia format
+        :type subject: str
+        :param relation: relation of the triple in DBpedia format
+        :type relation: str
+        :param objects: (list) of objects of the triple in DBpedia format, this parameter is optional
+        :type objects: list or str
         :return: list of triples
         :rtype: list
         """
@@ -470,7 +375,8 @@ class KnowledgeGraphUpdater:
     def get_entity(self, subject):
         """
         Returns all triples that has the subject parameter as the subject.
-        :param subject: subject in dbpedia format
+
+        :param subject: subject in DBpedia format
         :type subject: str
         :return: list of Triples
         :rtype: list
@@ -480,6 +386,7 @@ class KnowledgeGraphUpdater:
     def get_all_articles(self):
         """
         Returns all articles' URLs, headlines, and dates, in the form of dictionaries.
+
         :return: list of dictionaries of articles
         :rtype: list
         """
@@ -495,6 +402,17 @@ class KnowledgeGraphUpdater:
         return articles
 
     def extract_new_article(self, url, extraction_scope='noun_phrases', kg_auto_update=False):
+        """
+        Scrape an article given the URL and extract the triples from the article.
+
+        :param url: URL of article whose triples are going to be extracted
+        :type url: str
+        :param extraction_scope: The scope of the extraction, deciding whether it should include only relations between
+            'named_entities', 'noun_phrases', or 'all.
+        :type extraction_scope: str
+        :param kg_auto_update: whether the non-conflicting triples are added to the knowledge graph or not.
+        :type kg_auto_update: bool
+        """
         article = self.scrapers.scrape_text_from_url(url, save_to_db=True)
         try:
             self.__extract_and_save_triples(url, article, extraction_scope, kg_auto_update)
@@ -505,6 +423,7 @@ class KnowledgeGraphUpdater:
         """
         Returns all articles' URLs, headlines, and dates, whose triples have been extracted,
         in the form of dictionaries.
+
         :return: list of dictionaries of articles
         :rtype: list
         """
@@ -518,31 +437,3 @@ class KnowledgeGraphUpdater:
                 'date': article['date'].timestamp()
             })
         return articles
-
-
-if __name__ == '__main__':
-    kgu = KnowledgeGraphUpdater()
-    # kgu.update_missed_knowledge()
-    # kgu.delete_all_knowledge_from_article("https://www.bbc.co.uk/news/world-us-canada-55210243")
-
-    # pprint.pprint(kgu.get_all_pending_knowledge())
-
-    # kgu.insert_articles_knowledge([{
-    #     "source": "https://www.bbc.co.uk/news/world-us-canada-55210243",
-    #     "triples": [
-    #         {
-    #             "subject": "http://dbpedia.org/resource/Mr_Giuliani",
-    #             "relation": "http://dbpedia.org/ontology/repeat",
-    #             "objects": ["unsubstantiated claims"],
-    #             "added": False
-    #         }
-    #     ]
-    # }])
-
-    # kgu.delete_knowledge([{
-    #     "subject": "http://dbpedia.org/resource/Mr_Giuliani",
-    #     "relation": "http://dbpedia.org/ontology/repeat",
-    #     "objects": ["unsubstantiated claims"],
-    # }])
-
-    print(kgu.get_all_articles())

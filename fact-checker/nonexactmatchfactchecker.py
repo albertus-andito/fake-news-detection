@@ -116,7 +116,7 @@ class NonExactMatchFactChecker(FactChecker):
             if synonym_result is not None:
                 possibilities.extend(synonym_result)
         if len(possibilities) > 0:
-            return 'possible', possibilities+conflicts
+            return 'possible', list(set(possibilities+conflicts))
         if len(conflicts) > 0:
             return 'conflicts', conflicts
 
@@ -178,7 +178,7 @@ import pprint
     #                 ["http://dbpedia.org/resource/Mr_Giuliani"])
     # res = fc.fact_check_triples([triple])
     # pprint.pprint(res)
-
+    #
     # text = 'Mr Giuliani ignored social distancing. He also claimed electoral fraud. He studied sociology.'
     # text = 'Social distancing was ignored by Mr Giuliani. He also claimed electoral fraud. He studied sociology. ' \
     #        'He was admitted to hospital on Sunday.'

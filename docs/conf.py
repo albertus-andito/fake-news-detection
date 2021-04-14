@@ -33,6 +33,7 @@ author = 'Albertus Andito'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'recommonmark',
 ]
 
 # Add any paths that contain templates here, relative to this directory.

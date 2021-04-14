@@ -7,6 +7,7 @@ Welcome to Fake News Detection's documentation!
 ===============================================
 
 .. toctree::
+   About <README.md>
    :maxdepth: 2
    :caption: Contents:
 

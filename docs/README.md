@@ -3,7 +3,7 @@
 This project is the implementation part of my undergraduate final year project, titled "Using Dynamic Knowledge Graph
 for Fake News Detection". The final report will be available to read here once it is done and submitted.
 
-## Prerequisites to Run
+# Prerequisites to Run
 In order to run this project locally, you will need the followings:
 
 1. Docker and Docker Compose.
@@ -37,17 +37,7 @@ In order to run this project locally, you will need the followings:
     This is used for the triple extraction process. Download it from https://stanfordnlp.github.io/CoreNLP/. Java is 
    required to run this.
    
-7. (Optional) IIT OpenIE
-
-    This can also be used for the triple extraction, as an alternative to Stanford OpenIE. Changes are required in the
-   appropriate places in the code. Download it from https://github.com/dair-iitd/OpenIE-standalone.
-   
-8. (Recommended) Guardian Open Platform API Key
-
-    In order to smoothly scrape content from The Guardian, the Guardian API is used. Register for the developer key
-   here: https://bonobo.capi.gutools.co.uk/register/developer.
-
-## Install The Project Locally
+# Install The Project Locally
 
 1. From the terminal, run:
    ```
@@ -64,25 +54,18 @@ built locally because the Spacy version used in this project is later than versi
    pip install -r requirements.txt
    pip install -e .
    ```
-3. Create .env file by copying the content of .env.default file. Fill out all of the necessary values, or replace the 
-   default ones.
-   
-4. Install the UI.
-   Go to the ui folder (`cd ui`), and run the following command: `npm install`.
-   
-## Run The Project Locally
 
-This project consists of 4 components that can be run individually.
+### Install NeuralCoref for spacy > 2.1.0
+```
+git clone https://github.com/huggingface/neuralcoref.git
+cd neuralcoref
+pip install -r requirements.txt
+pip install -e .
+```
 
-### Run REST API
-The REST API is needed to access the main functionalities of this project. It is also needed when running the UI.
-
-1. Make sure that the local DBpedia and MongoDB are running.
-2. Run the Stanford CoreNLP by using this command: (make sure you are running it from the directory where you have the
-   Stanford CoreNLP jar file):
-   ```
-   java -mx4g -cp "*" edu.stanford.nlp.pipeline.StanfordCoreNLPServer \
-   -preload tokenize,ssplit,pos,lemma,depparse,natlog,openie \
-   -port 9000 -timeout 15000
-   ```
-3. 
+### Run StanfordCoreNLP
+```
+java -mx4g -cp "*" edu.stanford.nlp.pipeline.StanfordCoreNLPServer \
+-preload tokenize,ssplit,pos,lemma,depparse,natlog,openie \
+-port 9000 -timeout 15000
+```

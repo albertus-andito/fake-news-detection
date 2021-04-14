@@ -68,7 +68,14 @@ built locally because the Spacy version used in this project is later than versi
    default ones.
    
 4. Install the UI.
-   Go to the ui folder (`cd ui`), and run the following command: `npm install`.
+   Go to the ui folder (`cd ui`), and run the following commands: 
+   ```
+   npm install
+   cp .\src\style\my-theme.less .\node_modules\antd\dist\
+   cd .\node_modules\antd\dist\
+   lessc - -js my-theme.less ..\..\..\src\style\custom-antd.css
+   ```
+
    
 ## Run The Project Locally
 
@@ -87,9 +94,32 @@ The REST API is needed to access the main functionalities of this project. It is
    ```
 3. Run the REST API from the project root folder:
    ```
+   conda activate fake-news-detection
    python -m api.main
    ```
 4. You should now be able to hit the REST API endpoints on port 5000.
    You can also access the Swagger UI documentation and demo from http://localhost:5000/apidocs/.
    
+### Run User Interface
 
+The UI provides an intuitive way for users to interact with the REST API and the project as a whole.
+
+1. Make sure the REST API is running.
+
+2. Go to the ui folder (`cd ui`), and run the following command: `npm run start`.
+
+3. The UI can be accessed through http://localhost:3000
+
+### Run Article Scraper in background
+
+If you want to run the article scraper that runs periodically all the time, you need the followings:
+
+1. Make sure MongoDB is running.
+2. From the project's root directory, run `python -m articlescraper.main`
+
+### Run Knowledge Graph Updater in background
+
+If you want to have the triples extracted from the recently scraped articles all the time, you need the followings:
+
+1. Make sure the Stanford CoreNLP server is running. See step 2 of Run REST API.
+2. From the project's root directory, run `python -m knowledgegraphupdater.kgupdaterrunner`

@@ -1,21 +1,20 @@
+import json
 import logging
 import logging.config
+import neuralcoref
 import os
+import requests
+import spacy
+
 from json import JSONDecodeError
 from nltk.tokenize import sent_tokenize, word_tokenize
 from spacy.matcher import Matcher
 
 from definitions import ROOT_DIR, LOGGER_CONFIG_PATH
-from kgwrapper import KnowledgeGraphWrapper
-from triple import Triple
-from tripleextractors import StanfordExtractor, IITExtractor
-from utils import convert_to_dbpedia_ontology, DBPEDIA_RESOURCE
-
-import json
-import neuralcoref
-import pprint
-import requests
-import spacy
+from .kgwrapper import KnowledgeGraphWrapper
+from .triple import Triple
+from .tripleextractors import StanfordExtractor, IITExtractor
+from .utils import convert_to_dbpedia_ontology, DBPEDIA_RESOURCE
 
 
 class TripleProducer:

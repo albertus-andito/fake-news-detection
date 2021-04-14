@@ -1,7 +1,7 @@
 import neuralcoref
 import spacy
 
-from utils import convert_to_dbpedia_resource
+from .utils import convert_to_dbpedia_resource
 
 
 class EntityCorefResolver:

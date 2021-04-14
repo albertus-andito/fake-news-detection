@@ -1,4 +1,4 @@
-from kgupdater import KnowledgeGraphUpdater
+from .kgupdater import KnowledgeGraphUpdater
 
 
 def main():

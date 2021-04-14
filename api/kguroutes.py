@@ -4,7 +4,7 @@ import threading
 from flask import Blueprint, request
 
 from definitions import ROOT_DIR, LOGGER_CONFIG_PATH
-from kgupdater import KnowledgeGraphUpdater
+from knowledgegraphupdater.kgupdater import KnowledgeGraphUpdater
 
 kgu = KnowledgeGraphUpdater()
 kgu_api = Blueprint('kgu_api', __name__)

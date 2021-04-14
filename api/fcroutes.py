@@ -1,9 +1,9 @@
 from flask import Blueprint, request
 
 from articlescraper.scrapers import Scrapers
-from nonexactmatchfactchecker import NonExactMatchFactChecker
-from exactmatchfactchecker import ExactMatchFactChecker
-from triple import Triple
+from factcheckers.nonexactmatchfactchecker import NonExactMatchFactChecker
+from factcheckers.exactmatchfactchecker import ExactMatchFactChecker
+from common.triple import Triple
 
 fc_api = Blueprint('fc_api', __name__)
 

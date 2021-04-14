@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
-from kgwrapper import KnowledgeGraphWrapper
-from tripleproducer import TripleProducer
+from common.kgwrapper import KnowledgeGraphWrapper
+from common.tripleproducer import TripleProducer
 
 
 class FactChecker(ABC):

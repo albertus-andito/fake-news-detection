@@ -1,9 +1,9 @@
 from nltk.corpus import wordnet as wn
 
-from entitycorefresolver import EntityCorefResolver
-from factchecker import FactChecker
-from triple import Triple
-from utils import convert_to_dbpedia_ontology
+from common.entitycorefresolver import EntityCorefResolver
+from .factchecker import FactChecker
+from common.triple import Triple
+from common.utils import convert_to_dbpedia_ontology
 
 
 class NonExactMatchFactChecker(FactChecker):

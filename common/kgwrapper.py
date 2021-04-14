@@ -6,8 +6,8 @@ from dotenv import load_dotenv
 from pathlib import Path
 from SPARQLWrapper import SPARQLWrapper, JSON, POST
 
-from triple import Triple
-from utils import convert_to_dbpedia_resource, DBPEDIA_RESOURCE, DBPEDIA_ONTOLOGY
+from .triple import Triple
+from .utils import convert_to_dbpedia_resource, DBPEDIA_RESOURCE, DBPEDIA_ONTOLOGY
 
 
 class KnowledgeGraphWrapper:

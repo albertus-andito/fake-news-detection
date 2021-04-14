@@ -24,7 +24,7 @@ class NewsPoller:
         """
         Constructor method
         """
-        load_dotenv(dotenv_path=Path('../../.env'))
+        load_dotenv(dotenv_path=Path('../.env'))
         self.db_client = MongoClient(os.getenv("MONGODB_ADDRESS"))
         self.db = self.db_client["fnd"] # TODO: parameterised
         self.db_collection = self.db["articles"] # TODO: parameterised

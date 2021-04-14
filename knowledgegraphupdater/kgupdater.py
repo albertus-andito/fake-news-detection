@@ -8,10 +8,10 @@ from pymongo import MongoClient
 
 from articlescraper.scrapers import Scrapers
 from definitions import ROOT_DIR, LOGGER_CONFIG_PATH
-from entitycorefresolver import EntityCorefResolver
-from kgwrapper import KnowledgeGraphWrapper
-from triple import Triple
-from tripleproducer import TripleProducer
+from common.entitycorefresolver import EntityCorefResolver
+from common.kgwrapper import KnowledgeGraphWrapper
+from common.triple import Triple
+from common.tripleproducer import TripleProducer
 
 
 class KnowledgeGraphUpdater:

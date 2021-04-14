@@ -2,8 +2,8 @@ from flask import Flask
 from flasgger import Swagger
 from flask_cors import CORS
 
-from kguroutes import kgu_api
-from fcroutes import fc_api
+from .kguroutes import kgu_api
+from .fcroutes import fc_api
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})

@@ -85,4 +85,11 @@ The REST API is needed to access the main functionalities of this project. It is
    -preload tokenize,ssplit,pos,lemma,depparse,natlog,openie \
    -port 9000 -timeout 15000
    ```
-3. 
+3. Run the REST API from the project root folder:
+   ```
+   python -m api.main
+   ```
+4. You should now be able to hit the REST API endpoints on port 5000.
+   You can also access the Swagger UI documentation and demo from http://localhost:5000/apidocs/.
+   
+

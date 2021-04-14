@@ -1,4 +1,4 @@
-from factchecker import FactChecker
+from .factchecker import FactChecker
 
 
 class ExactMatchFactChecker(FactChecker):

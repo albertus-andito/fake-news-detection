@@ -3,6 +3,7 @@ from nltk import word_tokenize
 DBPEDIA_RESOURCE = "http://dbpedia.org/resource/"
 DBPEDIA_ONTOLOGY = "http://dbpedia.org/ontology/"
 
+
 def camelise(sentence):
     """
     Util function to convert words into camelCase

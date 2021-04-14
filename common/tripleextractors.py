@@ -2,16 +2,16 @@ import json
 import logging
 import logging.config
 import os
+
 from abc import ABC, abstractmethod
 from json import JSONDecodeError
-
 from dotenv import load_dotenv
 from pathlib import Path
 from pyopenie import OpenIE5
 from stanfordcorenlp import StanfordCoreNLP
 
 from definitions import ROOT_DIR, LOGGER_CONFIG_PATH
-from triple import Triple
+from .triple import Triple
 
 
 class TripleExtractor(ABC):
@@ -46,7 +46,7 @@ class StanfordExtractor(TripleExtractor):
 
     def __init__(self):
         super(StanfordExtractor, self).__init__()
-        load_dotenv(dotenv_path=Path('../.env'))
+        load_dotenv(dotenv_path=Path(ROOT_DIR, '.env'))
         self.coreNLP = StanfordCoreNLP(os.getenv('STANFORD_CORE_NLP_HOST'),
                                        port=int(os.getenv('STANFORD_CORE_NLP_PORT')))
 

@@ -1,8 +1,7 @@
 import logging
 import os
-from urllib.parse import urlparse
-
 import requests
+
 from abc import ABC, abstractmethod
 from bs4 import BeautifulSoup
 from datetime import datetime
@@ -10,11 +9,12 @@ from dotenv import load_dotenv
 from pathlib import Path
 from pymongo import MongoClient
 from requests_html import HTMLSession
+from urllib.parse import urlparse
 
 
 class ArticleScraper(ABC):
     """
-    Base class for article scrapers. Scrapes article and saves them to DB.
+    Base class for article scrapers. It scrapes articles and saves them to DB.
     """
     logger = logging.getLogger()
 
@@ -31,6 +31,7 @@ class ArticleScraper(ABC):
     def execute(self, url):
         """
         Scrapes article and saves them to DB if there is an article.
+
         :param url: Article url
         :type url: str
         """
@@ -41,7 +42,8 @@ class ArticleScraper(ABC):
     @abstractmethod
     def scrape(self, url):
         """
-        Scrapes article
+        Scrapes article.
+
         :param url:  Article url
         :type url: str
         :return: Dictionary of article in the format of {'headlines':..., 'date':..., 'text':..., 'source':...}
@@ -52,6 +54,7 @@ class ArticleScraper(ABC):
     def save_to_db(self, article):
         """
         Saves article to DB.
+
         :param article: News article text
         :type article: dict
         """
@@ -67,7 +70,8 @@ class BbcScraper(ArticleScraper):
     """
     def scrape(self, url):
         """
-        Scrapes BBC article
+        Scrapes BBC article.
+
         :param url:  Article url
         :type url: str
         :return: Dictionary of article in the format of {'headlines':..., 'date':..., 'text':..., 'source':...}
@@ -120,7 +124,8 @@ class IndependentScraper(ArticleScraper):
     """
     def scrape(self, url):
         """
-        Scrapes Independent article
+        Scrapes Independent article.
+
         :param url:  Article url
         :type url: str
         :return: Dictionary of article in the format of {'headlines':..., 'date':..., 'text':..., 'source':...}
@@ -156,6 +161,7 @@ class IndependentScraper(ArticleScraper):
 class GuardianScraper(ArticleScraper):
     """
     Guardian articles scraper.
+    It requires the GUARDIAN_API_KEY to be set in the .env
     """
     def __init__(self):
         super().__init__()
@@ -163,7 +169,8 @@ class GuardianScraper(ArticleScraper):
 
     def scrape(self, url):
         """
-        Scrapes Guardian article using Guardian Open Platform API (https://open-platform.theguardian.com/)
+        Scrapes Guardian article using Guardian Open Platform API (https://open-platform.theguardian.com/.
+
         :param url:  Article url
         :type url: str
         :return: Dictionary of article in the format of {'headlines':..., 'date':..., 'text':..., 'source':...}
@@ -199,6 +206,14 @@ class GuardianScraper(ArticleScraper):
             return {'source': url, 'message': e}
 
     def scrape_fallback(self, url):
+        """
+        Fallback scraping method if the Guardian API is having issues.
+
+        :param url:  Article url
+        :type url: str
+        :return: Dictionary of article in the format of {'headlines':..., 'date':..., 'text':..., 'source':...}
+        :rtype: dict
+        """
         page = requests.get(url)
         soup = BeautifulSoup(page.content, 'html.parser')
 
@@ -218,8 +233,6 @@ class GuardianScraper(ArticleScraper):
         }
 
 
-
-
 class GenericScraper(ArticleScraper):
     """
     Scraper for a generic website.
@@ -227,6 +240,7 @@ class GenericScraper(ArticleScraper):
     def scrape(self, url):
         """
         Scrapes text from <p> tags of the webpage.
+
         :param url: url
         :type url: str
         :return: Dictionary of article in the format of {'headlines':..., 'date':..., 'text':..., 'source':...}
@@ -249,7 +263,9 @@ class GenericScraper(ArticleScraper):
 
 
 class Scrapers:
-
+    """
+    Collection of scrapers.
+    """
     def __init__(self):
         self.bbc_scraper = BbcScraper()
         self.guardian_scraper = GuardianScraper()
@@ -259,8 +275,12 @@ class Scrapers:
     def scrape_text_from_url(self, url, save_to_db=False):
         """
         Scrapes text from the url given. It uses the generic scraper if the url is not for BBC, Guardian, or Independent.
+
         :param url: url
         :type url: str
+        :param save_to_db: whether to save the scraped text to the database or not. This is only applicable for BBC,
+            Independent, and Guardian URLs.
+        :type save_to_db: bool
         :return: text scraped from the url
         :rtype: str
         """
@@ -279,22 +299,3 @@ class Scrapers:
         else:
             scraped = self.generic_scraper.scrape(url)
         return scraped['texts']
-
-if __name__ == '__main__':
-    # bbc = BbcScraper()
-    independent = IndependentScraper()
-    # guardian = GuardianScraper()
-    #
-    # bbc.execute("https://www.bbc.co.uk/news/world-us-canada-55210243")
-    # independent.execute("https://www.independent.co.uk/news/science/archaeology/oxford-archaeology-dig-skeleton-hertfordshire-b1767027.html")
-    # guardian.execute("https://www.theguardian.com/business/2020/dec/15/barclays-fined-fca-covid-crisis")
-
-    # generic = GenericScraper()
-    # res = generic.scrape('https://news.sky.com/story/recommended-1-pay-rise-for-nhs-staff-labelled-pitiful-by-nursing-union-12235986')
-    # print(res)
-
-    # res = guardian.scrape_fallback("https://www.theguardian.com/sport/2021/mar/18/tokyo-olympics-ceremonies-chief-hiroshi-sasaki-sexism")
-    # print(res)
-
-    res = independent.scrape('https://www.independent.co.uk/news/world/americas/antivaxxers-marvin-hagler-death-vaccine-b1817067.html')
-    print(res)

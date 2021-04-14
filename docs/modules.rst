@@ -5,4 +5,6 @@ fake-news-detection
    :maxdepth: 4
 
    common
+   factcheckers
+   knowledgegraphupdater.articlescraper
    knowledgegraphupdater

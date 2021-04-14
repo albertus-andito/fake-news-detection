@@ -9,16 +9,16 @@ class ExactMatchFactChecker(FactChecker):
         """
         Fact check the given text, by first extracting the triples and then finding the exact match of the triples in the
         knowledge graph.
-        Truthfulness score is calculated simply by dividing the number of triples found by the number of all triples.
+
         :param article: article text
         :type article: str
         :param extraction_scope: The scope of the extraction, deciding whether it should include only relations between
-        'named_entities', 'noun_phrases', or 'all'.
+            'named_entities', 'noun_phrases', or 'all'.
         :type extraction_scope: str
-        :return: a tuple of fact check result (sentence, triples, and their existence) and the truthfulness score
-        :rtype: tuple
+        :return: a list of fact check result (sentence, {triples: their results})
+        :rtype: list
         """
-        article_triples = self.get_triples(article, extraction_scope)
+        article_triples = self.triple_producer.produce_triples(article, extraction_scope)
         fc_result = [(sentence, {triple: self.exact_fact_check(triple)
                       for triple in triples}) for (sentence, triples) in article_triples]
         # truth_values = [val for sentence, triples in fc_result for val in triples.values()]
@@ -28,12 +28,12 @@ class ExactMatchFactChecker(FactChecker):
     def fact_check_triples(self, triples, transitive=False):
         """
         Fact check the given triples, by finding the exact match of the triples in the knowledge graph.
-        Truthfulness score is calculated simply by dividing the number of triples found by the number of all triples.
+
         :param triples: list of triples of type triple.Triple
         :type triples: list
         :param transitive: whether a check should also be done for entities that are in the sameAs relation with the subject
         :type transitive: bool
-        :return: a tuple of fact check result (triples and their existence) and the truthfulness score
+        :return: a list of fact check result (sentence, {triples: their results})
         :rtype: tuple
         """
         fc_result = {triple: self.exact_fact_check(triple, transitive) for triple in triples}
@@ -44,11 +44,12 @@ class ExactMatchFactChecker(FactChecker):
     def exact_fact_check(self, triple, transitive=False):
         """
         Checks for the triple existence and conflicts
+
         :param triple: triple to be checked
         :type triple: triple.Triple
         :param transitive: whether a check should also be done for entities that are in the sameAs relation with the subject
         :type transitive: bool
-        :return: a tuple of its result and supporting triples
+        :return: a tuple of its result and list of supporting triples
         :rtype: tuple
         """
         exists = self.knowledge_graph.check_triple_object_existence(triple, transitive)
@@ -67,13 +68,3 @@ class ExactMatchFactChecker(FactChecker):
         # if len(conflicts) > 0:
         #     return 'conflicts', conflicts
         return 'none', []
-
-import pprint
-if __name__ == '__main__':
-    fc = ExactMatchFactChecker()
-    text = 'Mr Giuliani ignored social distancing. He also claimed electoral fraud. He studied sociology.'
-    triples = fc.get_triples(text)
-    pprint.pprint(triples)
-    print(type(triples[0]))
-
-    pprint.pprint(fc.fact_check(text))

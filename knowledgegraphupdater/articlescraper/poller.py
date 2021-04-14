@@ -3,10 +3,12 @@ import logging
 import os
 import schedule
 import time
-from articlescraper.scrapers import IndependentScraper, BbcScraper, GuardianScraper
+
 from dotenv import load_dotenv
 from pathlib import Path
 from pymongo import MongoClient
+
+from articlescraper.scrapers import IndependentScraper, BbcScraper, GuardianScraper
 
 
 class NewsPoller:
@@ -32,7 +34,6 @@ class NewsPoller:
     def start(self):
         """
         Starts the periodical polling process. Currently set to every minute.
-        :return:
         """
         NewsPoller.logger.info('NewsPoller started.')
 
@@ -55,6 +56,7 @@ class NewsPoller:
     def poll_news_feed(self, rss_url, scraper):
         """
         Polls the news feed RSS and uses the scraper to scrape articles.
+
         :param rss_url: News feed RSS URL
         :type rss_url: str
         :param scraper: Scraper for the corresponding news website

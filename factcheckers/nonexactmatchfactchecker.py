@@ -24,16 +24,16 @@ class NonExactMatchFactChecker(FactChecker):
         The inference is done by finding the exact match, finding the triples of the opposite relation (Object - Relation
         - Subject), finding the triples where subject or object are corefering entities, and finding the triples with
         similar (based on synonymy) relations.
-        Truthfulness score is calculated by dividing the number of inferred triples found by the number of all triples.
+
         :param article: article text
         :type article: str
         :param extraction_scope: The scope of the extraction, deciding whether it should include only relations between
-        'named_entities', 'noun_phrases', or 'all'.
+            'named_entities', 'noun_phrases', or 'all'.
         :type extraction_scope: str
-        :return: a tuple of fact check result (sentence, triples, and their existence) and the truthfulness score
-        :rtype: tuple
+        :return: a list of fact check result (sentence, {triples: their results})
+        :rtype: list
         """
-        article_triples = self.get_triples(article, extraction_scope)
+        article_triples = self.triple_producer.produce_triples(article, extraction_scope)
         entity_clusters = self.coref_resolver.get_coref_clusters(article)
         # fc_result = [(sentence, {result[0]: result[1] for result in self.non_exact_fact_check(triple, entity_clusters)})
         #              for (sentence, triples) in article_triples for triple in triples]
@@ -50,11 +50,11 @@ class NonExactMatchFactChecker(FactChecker):
         The inference is done by finding the exact match, finding the triples of the opposite relation (Object - Relation
         - Subject), and finding the triples with
         similar (based on synonymy) relations.
-        Truthfulness score is calculated by dividing the number of inferred triples found by the number of all triples.
+
         :param triples: list of triples of type triple.Triple
         :type triples: list
-        :return: a tuple of fact check result (triples and their existence) and the truthfulness score
-        :rtype: tuple
+        :return: a list of fact check result (sentence, {triples: their results})
+        :rtype: list
         """
         # fc_result = [{result[0]: result[1] for result in self.non_exact_fact_check(triple)}
         #              for triple in triples]
@@ -67,10 +67,12 @@ class NonExactMatchFactChecker(FactChecker):
         """
         Check whether the triple or the "related triples" exist in the knowledge graph or not.
         Related triples are:
-        - triples with the opposite relation (Object - Relationn - Subject)
+
+        - triples with the opposite relation (Object - Relation - Subject)
         - triples with subject or object replaced with the corefering entity (if entity_clusters is not None)
         - triples with relation replaced with its synonyms
         - triples with same subject and object, but different relation.
+
         :param original_triple: triple extracted from the text or inputted
         :type original_triple: triple.Triple
         :param entity_clusters: dictionary of entity coreference clusters
@@ -123,6 +125,16 @@ class NonExactMatchFactChecker(FactChecker):
         return 'none', []
 
     def __create_triples_from_coreference(self, triple, entity_clusters):
+        """
+        Create additional triples based on corefering entities.
+
+        :param triple: base triple
+        :type triple: triple.Triple
+        :param entity_clusters: dictionary of entity coreference clusters
+        :type entity_clusters: dict
+        :return: list of newly created triples based on corefering entities
+        :rtype: list
+        """
         triples = [triple]
         # get corefering mentions of subject and objects
         corefs_subject = entity_clusters.get(triple.subject)
@@ -149,6 +161,7 @@ class NonExactMatchFactChecker(FactChecker):
         Check the existence of triples, in which the relation is a synonym of the relation of the inputted triple.
         Once a triple is found, it is returned without checking the other synonyms.
         Note that it also checks the opposite relation (Object - Relation - Subject).
+
         :param triple: triple of type triple.Triple
         :type triple: triple.Triple
         :return: the triple, if found in the knowledge graph. None, otherwise.
@@ -168,34 +181,3 @@ class NonExactMatchFactChecker(FactChecker):
                         synonym_triple, transitive=True)
                     if opposite_exists:
                         return [Triple(obj, dbpedia_lemma, [triple.subject]) for obj in triple.objects]
-
-
-import pprint
-
-# if __name__ == '__main__':
-    # fc = BetterFactChecker()
-    # triple = Triple("http://dbpedia.org/resource/Social_distancing", "http://dbpedia.org/ontology/ignore",
-    #                 ["http://dbpedia.org/resource/Mr_Giuliani"])
-    # res = fc.fact_check_triples([triple])
-    # pprint.pprint(res)
-    #
-    # text = 'Mr Giuliani ignored social distancing. He also claimed electoral fraud. He studied sociology.'
-    # text = 'Social distancing was ignored by Mr Giuliani. He also claimed electoral fraud. He studied sociology. ' \
-    #        'He was admitted to hospital on Sunday.'
-    # pprint.pprint(fc.fact_check(text))
-    # a_dict = {'a': True, 'b': True}
-    # print(sum(a_dict.values()))
-    # print(all([]))
-
-    # synsets = (wn.synsets('neglect', pos=wn.VERB))
-    # print(synsets)
-    # for synset in synsets:
-    #     print('LEMMAS:')
-    #     for lemma in synset.lemmas():
-    #         print(lemma.name())
-        # print('HYPERNYMS:')
-        # for hypernym in synset.hypernyms():
-        #     print(hypernym.name())
-        # print('HYPONYMS:')
-        # for hyponym in synset.hyponyms():
-        #     print(hyponym.name())

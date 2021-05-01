@@ -179,7 +179,6 @@ class NonExactMatchFactChecker(FactChecker):
 
         results = []
         for task in as_completed(processes):
-            print(task.result())
             if task.result() is not None:
                 results.append(task.result())
         if len(results) > 0:

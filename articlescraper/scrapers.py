@@ -249,11 +249,12 @@ class GenericScraper(ArticleScraper):
         session = HTMLSession()
         page = session.get(url)
         soup = BeautifulSoup(page.content, 'html.parser')
-        text = soup.find_all(text=True)
-        # ps = soup.find_all('p')
-        # text = ''
-        # for p in ps:
-        #     text += ' ' + p.getText()
+        # text = soup.find_all(text=True)
+        ps = soup.find_all('p')
+        text = ''
+        for p in ps:
+            text += ' ' + p.getText()
+        print(text)
         return {
             'headlines': '',
             'date': '',

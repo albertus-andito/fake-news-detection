@@ -30,6 +30,7 @@ function ArticleTable({selectedArticle, setSelectedArticle, isUpdating}) {
             title: 'Date',
             dataIndex: 'date',
             key: 'date',
+            defaultSortOrder: 'descend',
             sorter: {
                 compare: (a, b) => a.date - b.date
             },

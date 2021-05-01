@@ -1,3 +1,5 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from itertools import repeat
 from nltk.corpus import wordnet as wn
 
 from common.entitycorefresolver import EntityCorefResolver
@@ -169,15 +171,28 @@ class NonExactMatchFactChecker(FactChecker):
         """
         relation = triple.relation.replace('http://dbpedia.org/ontology/', '')
         synsets = wn.synsets(relation, pos=wn.VERB)
-        for synset in synsets:
-            for lemma in synset.lemmas():
-                if lemma.name() != relation:
-                    dbpedia_lemma = convert_to_dbpedia_ontology(lemma.name())
-                    synonym_triple = Triple(triple.subject, dbpedia_lemma, triple.objects)
-                    exists = self.knowledge_graph.check_triple_object_existence(synonym_triple, transitive=True)
-                    if exists:
-                        return [synonym_triple]
-                    opposite_exists = self.knowledge_graph.check_triple_object_opposite_relation_existence(
-                        synonym_triple, transitive=True)
-                    if opposite_exists:
-                        return [Triple(obj, dbpedia_lemma, [triple.subject]) for obj in triple.objects]
+
+        processes = []
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            for synset in synsets:
+                processes.append(executor.submit(self.__process_synonym, synset, relation, triple))
+
+        results = []
+        for task in as_completed(processes):
+            print(task.result())
+            if task.result() is not None:
+                results.append(task.result())
+        if len(results) > 0:
+            return results
+
+    def __process_synonym(self, lemma, relation, triple):
+        if lemma.name() != relation:
+            dbpedia_lemma = convert_to_dbpedia_ontology(lemma.name())
+            synonym_triple = Triple(triple.subject, dbpedia_lemma, triple.objects)
+            exists = self.knowledge_graph.check_triple_object_existence(synonym_triple, transitive=True)
+            if exists:
+                return [synonym_triple]
+            opposite_exists = self.knowledge_graph.check_triple_object_opposite_relation_existence(
+                synonym_triple, transitive=True)
+            if opposite_exists:
+                return [Triple(obj, dbpedia_lemma, [triple.subject]) for obj in triple.objects]

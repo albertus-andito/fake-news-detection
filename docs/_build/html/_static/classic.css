@@ -21,7 +21,7 @@ html {
 body {
     font-family: sans-serif;
     font-size: 100%;
-    background-color: #51258f;
+    background-color: #1a1325;
     color: #000;
     margin: 0;
     padding: 0;
@@ -60,7 +60,7 @@ div.footer a {
 }
 
 div.related {
-    background-color: #51258f;
+    background-color: #1a1325;
     line-height: 30px;
     color: #ffffff;
 }

@@ -53,8 +53,8 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 html_theme = 'classic'
 html_theme_options = {
     'sidebarbgcolor': '#51258f',
-    'footerbgcolor': '#51258f',
-    'relbarbgcolor': '#51258f'
+    'footerbgcolor': '#1a1325',
+    'relbarbgcolor': '#1a1325'
 }
 
 

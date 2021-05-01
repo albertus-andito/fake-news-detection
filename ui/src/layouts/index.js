@@ -44,7 +44,9 @@ function AppLayout() {
                 </div>
             </Content>
             <Footer style={{ textAlign: 'center', color: '#bfbfbf'}}>
-                Albertus Andito - University of Sussex - 2021
+                <a href="https://albertus-andito.com/" style={{color: '#ebd7fa'}}>
+                    Albertus Andito
+                </a> - <a href="https://sussex.ac.uk" style={{color: '#ebd7fa'}}>University of Sussex</a> - 2021
             </Footer>
         </Layout>
     )

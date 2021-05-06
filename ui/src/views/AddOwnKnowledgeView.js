@@ -75,7 +75,7 @@ function AddTriplesForm() {
         <Form layout='vertical' onFinish={onSubmit} requiredMark={false} style={{ margin: '24px 0 0 0'}}>
              <TriplesFormInput />
              <Form.Item>
-                 <Button type='primary' htmlType='submit' disabled={isLoading}>
+                 <Button type='primary' htmlType='submit' disabled={isLoading} size='large'>
                      Add Triples to Knowledge Graph
                  </Button>
              </Form.Item>
@@ -120,7 +120,7 @@ function EqualizeTripleForm() {
                 <Input placeholder='http://dbpedia.org/resource/...'/>
             </Form.Item>
             <Form.Item>
-                <Button type="primary" htmlType="submit" disabled={isLoading}>
+                <Button type="primary" htmlType="submit" disabled={isLoading} size='large'>
                     Submit
                 </Button>
             </Form.Item>

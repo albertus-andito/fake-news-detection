@@ -48,8 +48,8 @@ export const handleFactCheckResponse = (response, setLoading, setExactMatch, set
     setUnknown(unknown);
 }
 
-function ArticleTextForm({loading, setLoading, algorithm, extractionScope, setExactMatch, setPossibleMatch, setConflict,
-                             setUnknown}) {
+function ArticleTextForm({loading, setLoading, algorithm, extractionScope, currentInputText, setCurrentInputText,
+                             setExactMatch, setPossibleMatch, setConflict, setUnknown}) {
     const onSubmit = (values) => {
         setLoading(true);
         console.log('Submitted', values);
@@ -74,10 +74,15 @@ function ArticleTextForm({loading, setLoading, algorithm, extractionScope, setEx
                     }
                 ]}
             >
-                <TextArea rows={4} disabled={loading}/>
+                <TextArea
+                    rows={4}
+                    disabled={loading}
+                    defaultValue={currentInputText}
+                    onChange={e => setCurrentInputText(e.target.value)}
+                />
             </Form.Item>
             <Form.Item>
-                <Button type='primary' htmlType='submit' disabled={loading} style={{ width: '100%'}}>
+                <Button type='primary' htmlType='submit' disabled={loading} style={{ width: '100%'}} size='large'>
                     Fact Check
                 </Button>
             </Form.Item>
@@ -126,7 +131,7 @@ function TriplesForm({loading, setLoading, algorithm, setExactMatch, setPossible
          <Form layout='vertical' onFinish={onSubmit} requiredMark={false} style={{ margin: '24px 0 0 0'}}>
              <TriplesFormInput />
              <Form.Item>
-                 <Button type='primary' htmlType='submit' disabled={loading} style={{ width: '100%'}}>
+                 <Button type='primary' htmlType='submit' disabled={loading} style={{ width: '100%'}} size='large'>
                      Fact Check
                  </Button>
              </Form.Item>
@@ -134,8 +139,8 @@ function TriplesForm({loading, setLoading, algorithm, setExactMatch, setPossible
     );
 }
 
-function URLForm({ loading, setLoading, algorithm, extractionScope, setExactMatch, setConflict, setPossibleMatch,
-                     setUnknown }) {
+function URLForm({ loading, setLoading, algorithm, extractionScope, currentInputText, setCurrentInputText,
+                     setExactMatch, setConflict, setPossibleMatch, setUnknown }) {
     const onSubmit = (values) => {
         setLoading(true);
         console.log('Submitted', values);
@@ -160,10 +165,14 @@ function URLForm({ loading, setLoading, algorithm, extractionScope, setExactMatc
                     }
                 ]}
             >
-                <Input disabled={loading}/>
+                <Input
+                    disabled={loading}
+                    defaultValue={currentInputText}
+                    onChange={e => setCurrentInputText(e.target.value)}
+                />
             </Form.Item>
             <Form.Item>
-                <Button type='primary' htmlType='submit' disabled={loading} style={{ width: '100%'}}>
+                <Button type='primary' htmlType='submit' disabled={loading} style={{ width: '100%'}} size='large'>
                     Fact Check
                 </Button>
             </Form.Item>
@@ -175,6 +184,7 @@ function FactCheckerView() {
     const [loading, setLoading] = useState(false);
     const [algorithm, setAlgorithm] =  useState('exact');
     const [inputType, setInputType] = useState('text');
+    const [currentInputText, setCurrentInputText] = useState('');
     const [extractionScope, setExtractionScope] = useState('noun_phrases')
     const [exactMatch, setExactMatch] = useState([]);
     const [possibleMatch, setPossibleMatch] = useState([]);
@@ -244,6 +254,7 @@ function FactCheckerView() {
 
             {inputType === 'text' && <ArticleTextForm loading={loading} setLoading={setLoading} algorithm={algorithm}
                                                       extractionScope={extractionScope}
+                                                      currentInputText={currentInputText} setCurrentInputText={setCurrentInputText}
                                                       setExactMatch={setExactMatch} setPossibleMatch={setPossibleMatch}
                                                       setConflict={setConflict} setUnknown={setUnknown}/>}
 
@@ -253,6 +264,7 @@ function FactCheckerView() {
 
             {inputType === 'url' && <URLForm loading={loading} setLoading={setLoading} algorithm={algorithm}
                                              extractionScope={extractionScope}
+                                             currentInputText={currentInputText} setCurrentInputText={setCurrentInputText}
                                              setExactMatch={setExactMatch} setPossibleMatch={setPossibleMatch}
                                              setConflict={setConflict} setUnknown={setUnknown}/>}
 

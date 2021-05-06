@@ -184,14 +184,15 @@ class NonExactMatchFactChecker(FactChecker):
         if len(results) > 0:
             return results
 
-    def __process_synonym(self, lemma, relation, triple):
-        if lemma.name() != relation:
-            dbpedia_lemma = convert_to_dbpedia_ontology(lemma.name())
-            synonym_triple = Triple(triple.subject, dbpedia_lemma, triple.objects)
-            exists = self.knowledge_graph.check_triple_object_existence(synonym_triple, transitive=True)
-            if exists:
-                return [synonym_triple]
-            opposite_exists = self.knowledge_graph.check_triple_object_opposite_relation_existence(
-                synonym_triple, transitive=True)
-            if opposite_exists:
-                return [Triple(obj, dbpedia_lemma, [triple.subject]) for obj in triple.objects]
+    def __process_synonym(self, synset, relation, triple):
+        for lemma in synset.lemmas():
+            if lemma.name() != relation:
+                dbpedia_lemma = convert_to_dbpedia_ontology(lemma.name())
+                synonym_triple = Triple(triple.subject, dbpedia_lemma, triple.objects)
+                exists = self.knowledge_graph.check_triple_object_existence(synonym_triple, transitive=True)
+                if exists:
+                    return [synonym_triple]
+                opposite_exists = self.knowledge_graph.check_triple_object_opposite_relation_existence(
+                    synonym_triple, transitive=True)
+                if opposite_exists:
+                    return [Triple(obj, dbpedia_lemma, [triple.subject]) for obj in triple.objects]

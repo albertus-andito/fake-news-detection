@@ -87,6 +87,51 @@ def transitive_exact_match_fact_check_triples():
     return {'triples': triples}, 200
 
 
+@fc_api.route('/exact/fact-check/triples-sentences/', methods=['POST'])
+def exact_match_fact_check_triples_sentences():
+    """
+    Exact match closed-world fact checking method, where the input is a list of triples.
+    The sentence is included with the triples, only for matching purposes.
+    ---
+    tags:
+      - Fact-Checker
+    consumes:
+      - application/json
+    parameters:
+      - in: body
+        name: triples_sentences_array
+        schema:
+          id: triples_sentences_array
+          type: array
+          items:
+            type: object
+            properties:
+              sentence:
+                type: string
+              triples:
+                $ref: '#/definitions/triples_array'
+        required: true
+    responses:
+      200:
+        description: Fact-checking result
+        schema:
+          id: fact_checking_sentences_result
+    """
+    input = request.get_json()
+    all_triples = []
+    for sentence in input:
+        input_triples = [Triple.from_dict(triple) for triple in sentence['triples']]
+        triples = exact_match_fc.fact_check_triples(input_triples)
+        triples = [
+            {'triple': triple.to_dict(), 'result': result, 'other_triples': [other.to_dict() for other in other_triples]}
+            for (triple, (result, other_triples)) in triples.items()]
+        all_triples.append({
+            'sentence': sentence['sentence'],
+            'triples': triples
+        })
+    return {'triples': all_triples}, 200
+
+
 @fc_api.route('/exact/fact-check/triples/', methods=['POST'])
 def exact_match_fact_check_triples():
     """

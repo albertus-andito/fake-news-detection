@@ -85,7 +85,7 @@ function NewArticleKnowledgeView() {
                     <Input disabled={loading}/>
                  </Form.Item>
                  <Form.Item>
-                    <Button type='primary' htmlType='submit' disabled={loading} style={{ width: '100%'}}>
+                    <Button type='primary' htmlType='submit' disabled={loading} style={{ width: '100%'}} size='large'>
                         Submit Article
                     </Button>
                  </Form.Item>

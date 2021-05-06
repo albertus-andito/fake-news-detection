@@ -35,6 +35,8 @@ function EntityExplorerView() {
     return(
         <Card style={{ textAlign: 'center' }}>
             <Typography.Title style={{ textAlign: 'center' }}>Entity Explorer</Typography.Title>
+            <Typography>Find all triples related to the entity. Please input the entity name in DBpedia format.</Typography>
+            <br/>
             <Form layout='inline' onFinish={onSubmit}>
                 <Form.Item name='entity'>
                     <Input addonBefore="http://dbpedia.org/resource/"/>
@@ -44,9 +46,12 @@ function EntityExplorerView() {
                 </Form.Item>
             </Form>
 
-            <Table dataSource={triples} columns={[...tripleColumns, ...action]}>
+            <Table
+                dataSource={triples}
+                columns={[...tripleColumns, ...action]}
+                pagination={{hideOnSinglePage: true, showSizeChanger: true}}
+            />
 
-            </Table>
         </Card>
 
 

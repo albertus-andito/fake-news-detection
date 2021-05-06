@@ -1,4 +1,4 @@
-import {Button, Card, Divider, Modal, Popover, Radio, Space, Spin, Switch, Table, Tag, Typography} from "antd";
+import {Alert, Button, Card, Divider, Modal, Popover, Radio, Space, Spin, Switch, Table, Tag, Typography} from "antd";
 import React, { useState, useEffect } from 'react';
 import axios from "axios";
 import {convertToDBpediaLink, tripleColumns} from "../utils";
@@ -16,7 +16,14 @@ function ArticleTable({selectedArticle, setSelectedArticle, isUpdating}) {
             sorter: {
                 compare: (a, b) => (a.source || '').localeCompare(b.source || ''),
             },
-            render: (text) => <a href={text}>{text}</a>,
+            render: (text) => {
+                return {
+                    props:  {
+                        style: { cursor: 'pointer'}
+                    },
+                    children: <a href={text}>{text}</a>,
+                };
+            },
         },
         {
             title: 'Headline',
@@ -24,6 +31,14 @@ function ArticleTable({selectedArticle, setSelectedArticle, isUpdating}) {
             key: 'headlines',
             sorter: {
                 compare: (a, b) => (a.headlines || '').localeCompare(b.headlines || ''),
+            },
+            render: (text) => {
+                return {
+                    props:  {
+                        style: { cursor: 'pointer'}
+                    },
+                    children: text,
+                };
             },
         },
         {
@@ -34,7 +49,14 @@ function ArticleTable({selectedArticle, setSelectedArticle, isUpdating}) {
             sorter: {
                 compare: (a, b) => a.date - b.date
             },
-            render: (text) => <p>{new Date(text * 1000).toUTCString()}</p>
+            render: (text) => {
+                return {
+                    props: {
+                        style: { cursor: 'pointer'}
+                    },
+                    children: <p>{new Date(text * 1000).toUTCString()}</p>,
+                }
+            }
         }
     ];
 
@@ -65,6 +87,11 @@ function ArticleTable({selectedArticle, setSelectedArticle, isUpdating}) {
             columns={articleColumns}
             rowKey='source'
             rowSelection={rowSelection}
+            onRow={(record, rowIndex) => {
+                return {
+                    onClick: e => setSelectedArticle([record.source])
+                };
+            }}
             pagination={{pageSize: 5}}
         />
     )
@@ -104,6 +131,7 @@ function UnresolvedCorefEntitiesTable({coreferingEntities}) {
 
 function ArticleKnowledgeView() {
     const [isUpdating, setIsUpdating] = useState(false);
+    const [isUpdated, setIsUpdated] = useState(false);
     const [autoAdd, setAutoAdd] = useState(false);
     const [extractionScope, setExtractionScope] = useState('noun_phrases')
     // const [coreferingEntities, setCoreferingEntities] = useState();
@@ -123,7 +151,8 @@ function ArticleKnowledgeView() {
         setLoading(true);
         axios.get(`/kgu/article-triples/pending/${selectedArticle[0]}`)
             .then((res) => {
-                axios.post('/fc/non-exact/fact-check/triples-sentences/', res.data.triples)
+                axios.post('/fc/exact/fact-check/triples-sentences/', res.data.triples)
+                // axios.post('/fc/non-exact/fact-check/triples-sentences/', res.data.triples)
                     .then((res) => {
                         handleFactCheckResponse(res, setLoading, setExactMatch, setPossibleMatch, setConflict, setUnknown)
                     })
@@ -158,12 +187,14 @@ function ArticleKnowledgeView() {
         })
         .then(function() {
             setIsUpdating(true);
+            setIsUpdated(false);
         });
         let status = setInterval(function() {
             axios.get('/kgu/updates/status')
             .then(function(response) {
-                if (response.status == 200) {
+                if (response.status === 200) {
                     setIsUpdating(false);
+                    setIsUpdated(true);
                     return clearInterval(status)
                 }
             })
@@ -234,11 +265,13 @@ function ArticleKnowledgeView() {
                 <Button
                     type='primary'
                     style={{ margin: '10px auto'}}
+                    size='large'
                     onClick={onUpdateClick}
                     loading={isUpdating}
                 >
                     Update
                 </Button>
+                {isUpdated && <Alert message="Triples have been extracted from the scraped articles!" type="success" />}
             </Space>
 
             {/*<Divider>Unresolved Corefering Entities</Divider>*/}

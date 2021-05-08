@@ -222,7 +222,7 @@ class TripleProducer:
         :return: a list of list of triples in which the Subjects and Objects are all named entities
         :rtype: list
         """
-        entities = [ent.text for ent in spacy_doc.ents]
+        entities = [ent.text.lower() for ent in spacy_doc.ents]
         return self.__filter(entities, all_triples)
 
     # spacy noun chunks is not accurate

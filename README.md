@@ -1,9 +1,29 @@
 # Knowledge-based Fake News Detection
 
 This project is the implementation part of my undergraduate final year project, titled "Using Dynamic Knowledge Graph
-for Fake News Detection". The final report will be available to read here once it is done and submitted.
+for Fake News Detection". The final report is available to read in the [report.pdf](./report.pdf) file
 
-The package documentation can be found at /docs/_build/html/index.html or fakenewsdetection.pdf.
+This repository is hosted in [https://github.com/albertus-andito/fake-news-detection](https://github.com/albertus-andito/fake-news-detection).
+
+The package documentation can be found at [/docs/_build/html/index.html](./docs/_build/html/index.html) or [/docs/fakenewsdetection.pdf](./docs/fakenewsdetection.pdf).
+
+## File Listing
+Below is a short explanation of the content of each directory and top-level file in this repository:
+- [api](./api): Flask REST API
+- [articlescraper](./articlescraper): article scrapers and RSS pollers
+- [common](./common): common modules, such as Triple Producer and Knowledge Graph Wrapper
+- [docs](./docs): python documentation of this package
+- [evaluation-result](./evaluation-result): spreadsheet containing full evaluation result and usability testing result
+- [factcheckers](./factcheckers): exact match and non-exact match fact-checkers
+- [knowledgegraphupdater](./knowledgegraphupdater): Knowledge Graph Updater and its runner
+- [ui](./ui): all things related to the User Interface
+- [env.default](./env.default): default environment variables
+- [definitions.py](./definitions.py): constants for logger
+- [environment.yml](./environment.yml): Conda environment file containing list of external libraries
+- [logger.conf](./logger.conf): logger config file
+- [README.md](./README.md): project readme file
+- [report.pdf](./report.pdf): final report (dissertation) of the project
+
 
 ## Prerequisites to Run
 In order to run this project locally, you will need the followings:

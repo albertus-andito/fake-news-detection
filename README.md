@@ -17,7 +17,7 @@ Below is a short explanation of the content of each directory and top-level file
 - [factcheckers](./factcheckers): exact match and non-exact match fact-checkers
 - [knowledgegraphupdater](./knowledgegraphupdater): Knowledge Graph Updater and its runner
 - [ui](./ui): all things related to the User Interface
-- [env.default](./env.default): default environment variables
+- [.env.default](./.env.default): default environment variables
 - [definitions.py](./definitions.py): constants for logger
 - [environment.yml](./environment.yml): Conda environment file containing list of external libraries
 - [logger.conf](./logger.conf): logger config file
